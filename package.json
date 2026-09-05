@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "doctor": "node scripts/doctor.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.49",
