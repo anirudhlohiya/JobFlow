@@ -4,7 +4,7 @@
 
 ---
 
-## Phase 0: Documentation ✅ (Current)
+## Phase 0: Documentation ✅
 
 - [x] README
 - [x] PRD (01)
@@ -20,27 +20,27 @@
 
 ---
 
-## Phase 1: Core Application Engine (Weeks 1–2)
+## Phase 1: Core Application Engine ✅ (Code complete — needs user credentials)
 
 **Goal:** Job post → tailored resume → email draft → review screen → send queue.
 
 ### Tasks
-- [ ] Scaffold Next.js project (TypeScript + Tailwind + Prisma + SQLite)
-- [ ] Project structure per Architecture doc
-- [ ] Settings page (API keys, BYOK multi-provider)
-- [ ] Gmail OAuth connect flow (encrypted token storage)
-- [ ] Ingestion: paste text → AI extraction
-- [ ] Ingestion: upload images → AI extraction (vision)
-- [ ] Extraction review UI (edit fields)
-- [ ] Resume upload (.tex)
-- [ ] Resume tailoring (AI rewrites LaTeX per JD)
-- [ ] Tectonic compile → PDF preview
-- [ ] Email draft generation
-- [ ] Review & approve screen (single view: JD + resume + email)
-- [ ] Send queue (scheduler: 9–11 AM IST weekday window)
-- [ ] Gmail send with PDF attachment
-- [ ] Follow-up draft generation (2 days, same thread)
-- [ ] Application tracker dashboard (list, statuses, countdowns)
+- [x] Scaffold Next.js project (TypeScript + Tailwind + Prisma + SQLite)
+- [x] Project structure per Architecture doc
+- [x] Settings page (API keys, BYOK multi-provider)
+- [x] Gmail OAuth connect flow (encrypted token storage)
+- [x] Ingestion: paste text → AI extraction
+- [x] Ingestion: upload images → AI extraction (vision)
+- [x] Extraction review UI (edit fields)
+- [x] Resume upload (.tex)
+- [x] Resume tailoring (AI rewrites LaTeX per JD)
+- [x] Tectonic compile → PDF preview
+- [x] Email draft generation
+- [x] Review & approve screen (single view: JD + resume + email)
+- [x] Send queue (scheduler: 9–11 AM IST weekday window)
+- [x] Gmail send with PDF attachment
+- [x] Follow-up draft generation (2 days, same thread)
+- [x] Application tracker dashboard (list, statuses, countdowns)
 
 ### Deliverables
 - Working local app: full job-application flow end-to-end

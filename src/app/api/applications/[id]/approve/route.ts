@@ -31,7 +31,8 @@ export async function POST(
     data: {
       status: "QUEUED",
       scheduledSendAt,
-      followUpCount: 0,
+      // Preserve follow-up count (approving a follow-up must not reset it)
+      followUpCount: application.followUpCount,
     },
   });
 
