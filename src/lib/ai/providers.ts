@@ -10,13 +10,13 @@ import type { LLMProvider } from "@/types";
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-3-5-haiku-latest",
-  google: "gemini-1.5-flash",
+  google: "gemini-3.6-flash",
   groq: "llama-3.3-70b-versatile",
 };
 
 const VISION_MODELS: Partial<Record<LLMProvider, string>> = {
-  openai: "gpt-4o-mini",
-  google: "gemini-1.5-flash",
+  openai: "gpt-4o",
+  google: "gemini-3.6-flash",
   anthropic: "claude-3-5-haiku-latest",
 };
 
@@ -49,7 +49,7 @@ export async function resolveProvider(vision = false): Promise<AiProviderConfig>
   const modelFromDb = await prisma.setting.findUnique({
     where: { key: "llm_model" },
   });
-  const explicitModel = modelFromDb?.value;
+  const explicitModel = modelFromDb?.value ?? process.env.DEFAULT_LLM_MODEL;
   const visionModel = vision ? VISION_MODELS[provider] : undefined;
 
   return {
