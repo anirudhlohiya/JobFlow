@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { draftEmail } from "@/lib/ai/draft";
-import { getConfig } from "@/lib/config";
+import { getUserProfile } from "@/lib/profile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cfg = getConfig();
+    const user = await getUserProfile();
     const draft = await draftEmail({
       job: {
         role: job.role ?? "",
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         source: job.source,
         location: job.location,
       },
-      user: cfg.user,
+      user,
       resumeHighlights,
       templateId,
       isFollowUp,

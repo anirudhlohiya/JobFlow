@@ -33,6 +33,10 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgType, setMsgType] = useState<"ok" | "err">("ok");
+
+  type ResumeRow = { id: string; name: string; isDefault: boolean; updatedAt: string };
+  const [resumes, setResumes] = useState<ResumeRow[]>([]);
 
   // Provider keys
   const [provider, setProvider] = useState("openai");
@@ -41,6 +45,8 @@ function SettingsContent() {
   const [geminiKey, setGeminiKey] = useState("");
   const [groqKey, setGroqKey] = useState("");
   const [model, setModel] = useState("");
+
+  const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0];
 
   // Gmail
   const gmailConnected = settings?.gmail?.connected ?? false;
@@ -70,7 +76,13 @@ function SettingsContent() {
         setUserPhone(data.user?.phone ?? "");
         setUserLinkedin(data.user?.linkedin ?? "");
       })
+      .catch(() => setMsgType("err"))
       .finally(() => setLoading(false));
+
+    fetch("/api/resume")
+      .then((r) => r.json())
+      .then((data) => setResumes(data.resumes ?? []))
+      .catch(() => setResumes([]));
   }, []);
 
   async function handleSaveProvider() {
@@ -91,12 +103,14 @@ function SettingsContent() {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    setSaving(false);
+setSaving(false);
     if (res.ok) {
       setMsg("Provider settings saved.");
+      setMsgType("ok");
       window.location.reload();
     } else {
       setMsg("Failed to save: " + (data.error ?? "unknown error"));
+      setMsgType("err");
     }
   }
 
@@ -108,23 +122,34 @@ function SettingsContent() {
     formData.append("file", file);
     formData.append("isDefault", "true");
 
-    const res = await fetch("/api/resume/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    setUploading(false);
-    if (res.ok) {
-      setMsg(`Resume "${data.resume.name}" uploaded successfully.`);
-    } else {
-      setMsg("Upload failed: " + (data.error ?? "unknown error"));
+    try {
+      const res = await fetch("/api/resume/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMsg(`Resume "${data.resume.name}" uploaded successfully.`);
+        setMsgType("ok");
+        const r = await fetch("/api/resume");
+        const rd = await r.json();
+        setResumes(rd.resumes ?? []);
+      } else {
+        setMsg("Upload failed: " + (data.error ?? "unknown error"));
+        setMsgType("err");
+      }
+    } catch {
+      setMsg("Upload failed: network error.");
+      setMsgType("err");
+    } finally {
+      setUploading(false);
     }
   }
 
   async function handleSaveUser() {
     setSaving(true);
     setMsg(null);
-    await fetch("/api/settings", {
+const res = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -135,7 +160,13 @@ function SettingsContent() {
       }),
     });
     setSaving(false);
-    setMsg("Profile saved.");
+    if (res.ok) {
+      setMsg("Profile saved.");
+      setMsgType("ok");
+    } else {
+      setMsg("Failed to save profile.");
+      setMsgType("err");
+    }
   }
 
   if (loading) {
@@ -157,7 +188,7 @@ function SettingsContent() {
       </div>
 
       {msg && (
-        <div className="rounded-md bg-cyan-soft border border-cyan/30 px-4 py-3 text-sm text-[#007970]">
+        <div className={`rounded-md border px-4 py-3 text-sm ${msgType === "ok" ? "bg-cyan-soft border-cyan/30 text-[#007970]" : "bg-warning-soft border-warning/30 text-warning-deep"}`}>
           {msg}
         </div>
       )}
@@ -274,7 +305,7 @@ function SettingsContent() {
                 Disconnect
               </Button>
             ) : (
-              <Button render={<a href="/api/auth/google" />} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+              <Button render={<a href="/api/auth/google" />} nativeButton={false} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
                 Connect Gmail
               </Button>
             )}
@@ -293,10 +324,22 @@ function SettingsContent() {
           </p>
         </CardHeader>
         <CardContent>
+          {defaultResume && (
+            <div className="mb-4 flex items-center justify-between rounded-md border border-hairline bg-canvas px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink truncate">{defaultResume.name}</p>
+                <p className="text-[12px] text-mute">
+                  Uploaded {new Date(defaultResume.updatedAt).toLocaleString()}
+                  {defaultResume.isDefault ? " · default" : ""}
+                </p>
+              </div>
+              <CheckCircle2 className="w-5 h-5 text-[#007970] shrink-0" />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 rounded-md border border-hairline bg-white px-4 py-2.5 cursor-pointer hover:border-body">
               <Upload className="w-4 h-4 text-mute" />
-              <span className="text-sm text-body">{uploading ? "Uploading…" : "Choose .tex file"}</span>
+              <span className="text-sm text-body">{uploading ? "Uploading…" : defaultResume ? "Replace .tex file" : "Choose .tex file"}</span>
               <input
                 type="file"
                 accept=".tex,text/plain"
@@ -318,7 +361,7 @@ function SettingsContent() {
             Your Profile
           </CardTitle>
           <p className="text-sm text-body">
-            Fills the signature line of every email. Edit config/user.config.yaml to change.
+            Fills the signature line of every email. Saved here — defaults come from config/user.config.yaml.
           </p>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">

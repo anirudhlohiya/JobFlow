@@ -1,4 +1,4 @@
-import { generateObject, generateText, type LanguageModel } from "ai";
+import { generateObject, generateText, type UserModelMessage, type LanguageModel } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -113,18 +113,32 @@ export async function runObjectGeneration<T>({
   system,
   schema,
   vision,
+  image,
 }: {
   prompt: string;
   system: string;
   schema: object;
   vision?: boolean;
+  image?: string;
 }): Promise<T> {
   const model = await getModel(vision);
+  let messages: UserModelMessage[] | undefined;
+  if (vision && image) {
+    messages = [
+      {
+        role: "user",
+        content: [
+          { type: "image", image },
+          { type: "text", text: prompt },
+        ],
+      },
+    ];
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await generateObject<any>({
     model,
     schema: schema as never,
-    prompt,
+    ...(messages ? { messages } : { prompt }),
     system,
     temperature: 0.2,
   });

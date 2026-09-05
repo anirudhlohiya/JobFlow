@@ -8,6 +8,28 @@ function getTectonicPath(): string {
   return process.env.TECTONIC_PATH || "tectonic";
 }
 
+/**
+ * Tectonic uses the XeTeX engine, but many resume templates ship pdfTeX-only
+ * hooks (e.g. the Jake's Resume "glyphtounicode" setup). Neutralize them so
+ * compilation succeeds under XeTeX without touching the tailored LaTeX.
+ */
+function compatWithXeTeX(source: string): string {
+  let s = source;
+  s = s.replace(
+    /\\input\{glyphtounicode\}/gi,
+    "\\ifdefined\\pdfglyphtounicode\\input{glyphtounicode}\\else\\relax\\fi"
+  );
+  s = s.replace(
+    /\\pdfgentounicode\s*=\s*1\b/gi,
+    "\\ifdefined\\pdfgentounicode\\pdfgentounicode=1\\fi"
+  );
+  s = s.replace(
+    /^[ \t]*\\pdf(?:inclusioncopyfonts|minorversion|objcompresslevel|compresslevel|pkresolution|gentounicode|suppressoptionalinfo|mapfile|mapline|trailer|info|catalog|pageattr|fontattr|glyphtounicode)\b[^\r\n]*$/gim,
+    ""
+  );
+  return s;
+}
+
 export async function compileLatex(latexSource: string, outputName?: string): Promise<{ pdfPath: string; pdfBase64: string }> {
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -18,7 +40,7 @@ export async function compileLatex(latexSource: string, outputName?: string): Pr
   const texPath = path.join(OUTPUT_DIR, `${safeName}.tex`);
   const pdfPath = path.join(OUTPUT_DIR, `${safeName}.pdf`);
 
-  fs.writeFileSync(texPath, latexSource, "utf8");
+  fs.writeFileSync(texPath, compatWithXeTeX(latexSource), "utf8");
 
   await runTectonic(texPath);
 
@@ -35,7 +57,6 @@ function runTectonic(texPath: string): Promise<void> {
     const tectonicPath = getTectonicPath();
     const proc = spawn(tectonicPath, [texPath], {
       cwd: OUTPUT_DIR,
-      shell: process.platform === "win32",
     }); /*turbopackIgnore: true*/
 
     let stderr = "";
@@ -43,8 +64,8 @@ function runTectonic(texPath: string): Promise<void> {
 
     const timer = setTimeout(() => {
       proc.kill();
-      reject(new Error(`Tectonic compile timed out after 60s.\n${stderr}`));
-    }, 60_000);
+      reject(new Error(`Tectonic compile timed out after 300s.\n${stderr}`));
+    }, 300_000);
 
     proc.on("error", (err) => {
       clearTimeout(timer);

@@ -3,6 +3,7 @@
  * Run: npm run doctor
  * Reports what's configured and what's still missing — no network calls.
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
@@ -66,22 +67,26 @@ check(
   `${providers.map(([, p, url]) => `${p} (${url})`).join(" · ")}`
 );
 
-// Tectonic
+// Tectonic — checks PATH or TECTONIC_PATH from .env
 let tectonicFound = false;
 let tectonicErr = "";
-try {
-  const which = execSync(process.platform === "win32" ? "where tectonic" : "which tectonic", {
-    stdio: ["ignore", "pipe", "ignore"],
-  }).toString().trim();
-  tectonicFound = which.length > 0;
-} catch (e) {
-  tectonicErr = String(e.message || e).split("\n")[0];
-}
 const tectonicCustom = env.TECTONIC_PATH && fs.existsSync(env.TECTONIC_PATH);
+if (tectonicCustom) {
+  tectonicFound = true;
+} else {
+  try {
+    const which = execSync(process.platform === "win32" ? "where tectonic" : "which tectonic", {
+      stdio: ["ignore", "pipe", "ignore"],
+    }).toString().trim();
+    tectonicFound = which.length > 0;
+  } catch (e) {
+    tectonicErr = String(e.message || e).split("\n")[0];
+  }
+}
 check(
   "Tectonic LaTeX compiler",
-  tectonicFound || Boolean(tectonicCustom),
-  `install from https://tectonic-typesetting.github.io (or set TECTONIC_PATH)${tectonicErr ? " — " + tectonicErr : ""}`
+  tectonicFound,
+  `install from https://tectonic-typesetting.github.io (or set TECTONIC_PATH in .env)${tectonicErr ? " — " + tectonicErr : ""}`
 );
 
 // user config

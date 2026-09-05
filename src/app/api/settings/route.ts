@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { encryptSecret, decryptSecret } from "@/lib/crypto";
 import { getOAuthToken, getOAuthClient } from "@/lib/gmail/auth";
-import { reloadConfig } from "@/lib/config";
 import { resolveProvider } from "@/lib/ai/providers";
+import { getUserProfile } from "@/lib/profile";
 
 const SENSITIVE_KEYS = [
   "llm_key_openai_api_key",
@@ -56,13 +56,7 @@ export async function GET() {
 }
 
 async function getConfigUser() {
-  const cfg = reloadConfig();
-  return {
-    name: cfg.user.name,
-    email: cfg.user.email,
-    phone: cfg.user.phone,
-    linkedin: cfg.user.linkedin,
-  };
+  return getUserProfile();
 }
 
 export async function PATCH(request: NextRequest) {

@@ -39,6 +39,8 @@ export async function PATCH(
   if (body.emailSubject !== undefined) data.emailSubject = body.emailSubject || null;
   if (body.emailBody !== undefined) data.emailBody = body.emailBody || null;
   if (body.emailTemplate !== undefined) data.emailTemplate = body.emailTemplate || null;
+  if (body.tailoredLatex !== undefined) data.tailoredLatex = body.tailoredLatex || null;
+  if (body.tailoredPdfPath !== undefined) data.tailoredPdfPath = body.tailoredPdfPath || null;
   if (body.status !== undefined) data.status = body.status;
 
   try {

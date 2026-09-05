@@ -32,10 +32,10 @@ export default function OutreachPage() {
             safety ramp, follow-up sequences, and reply detection land in the next milestone.
           </p>
           <div className="flex gap-3 mt-2">
-            <Button render={<Link href="/new" />} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+            <Button render={<Link href="/new" />} nativeButton={false} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
               Start an Application
             </Button>
-            <Button render={<Link href="/docs/06-DELIVERABILITY-PLAYBOOK.md" />} variant="outline" className="rounded-md h-9 bg-white text-ink border-hairline hover:bg-hairline-soft">
+            <Button render={<Link href="/docs/06-DELIVERABILITY-PLAYBOOK.md" />} variant="outline" nativeButton={false} className="rounded-md h-9 bg-white text-ink border-hairline hover:bg-hairline-soft">
               Read the Deliverability Playbook
             </Button>
           </div>

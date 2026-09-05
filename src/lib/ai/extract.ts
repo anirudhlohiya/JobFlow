@@ -62,16 +62,16 @@ export async function extractJobFromText(rawText: string): Promise<ExtractedJob>
 }
 
 export async function extractJobFromImage(
-  imageBase64: string,
-  mimeType: string
+  imageBase64: string
 ): Promise<ExtractedJob> {
-  const prompt = `You are parsing a screenshot of a job posting. Here is the image (${mimeType}, base64 data URL). Extract the job details following your instructions.`;
+  const prompt = `You are parsing a screenshot of a job posting. Extract the job details from the attached image.`;
   try {
     const result = await runObjectGeneration<ExtractionResult>({
       prompt,
       system: SYSTEM_PROMPT,
       schema: extractionSchema,
       vision: true,
+      image: imageBase64,
     });
     return {
       role: result.role,

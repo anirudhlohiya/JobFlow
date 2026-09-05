@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { prisma } from "./db";
 import { getConfig } from "./config";
 import { sendEmail } from "./gmail/send";
+import { getUserProfile } from "./profile";
 
 let schedulerStarted = false;
 
@@ -92,10 +93,12 @@ async function sendQueuedApplication(app: Record<string, unknown>): Promise<void
     // Check cold-outreach cap
     if (app.isColdOutreach) {
       const cap = getColdOutreachDailyCap();
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
       const sentToday = await prisma.emailLog.count({
         where: {
           status: "SENT",
-          sentAt: { gte: new Date(now().toISOString().split("T")[0]) },
+          sentAt: { gte: startOfToday },
         },
       });
       if (sentToday >= cap) return;
@@ -169,13 +172,14 @@ async function processFollowUps(): Promise<void> {
     try {
       // Draft a follow-up that still needs user approval
       const followUpNumber = app.followUpCount + 1;
+      const profile = await getUserProfile();
       await prisma.application.update({
         where: { id: app.id },
         data: {
           status: "FOLLOW_UP_PENDING",
           followUpCount: followUpNumber,
           emailSubject: `Re: ${app.emailSubject ?? ""}`,
-          emailBody: `Dear ${app.hrName ?? "Hiring Team"},\n\nJust following up on my application for the ${app.role} position at ${app.company}. I wanted to confirm you received it and that I'm still very interested in the opportunity.\n\nBest,\n${getConfig().user.name}`,
+          emailBody: `Dear ${app.hrName ?? "Hiring Team"},\n\nJust following up on my application for the ${app.role} position at ${app.company}. I wanted to confirm you received it and that I'm still very interested in the opportunity.\n\nBest,\n${profile.name}`,
         },
       });
     } catch (error) {

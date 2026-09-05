@@ -151,13 +151,13 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            <Button render={<Link href="/new" />} className="rounded-md h-9">
+            <Button render={<Link href="/new" />} nativeButton={false} className="rounded-md h-9">
               New Application
             </Button>
-            <Button render={<Link href="/applications" />} variant="ghost" className="rounded-md h-9 text-ink">
+            <Button render={<Link href="/applications" />} variant="ghost" nativeButton={false} className="rounded-md h-9 text-ink">
               View All Applications
             </Button>
-            <Button render={<Link href="/settings" />} variant="ghost" className="rounded-md h-9 text-ink">
+            <Button render={<Link href="/settings" />} variant="ghost" nativeButton={false} className="rounded-md h-9 text-ink">
               Settings &amp; Connections
             </Button>
           </CardContent>

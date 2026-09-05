@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       ? imageBase64
       : `data:${mimeType ?? "image/png"};base64,${imageBase64}`;
 
-    const job = await extractJobFromImage(base64Data, mimeType ?? "image/png");
+    const job = await extractJobFromImage(base64Data);
 
     return new Response(JSON.stringify({ job }), {
       status: 200,
