@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  isEncrypted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Resume {
+  id           String   @id @default(cuid())
+  name         String
+  latexContent String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  applications Application[]
+}
+
+model Application {
+  id              String   @id @default(cuid())
+  company         String
+  role            String
+  hrEmail         String?
+  hrName          String?
+  skills          String   @default("[]")
+  experience      String?
+  location        String?
+  isRemote        Boolean  @default(false)
+  salary          String?
+  source          String?
+  sourceRawText   String?
+  sourceImage     String?
+  resumeId        String?
+  resume          Resume?  @relation(fields: [resumeId], references: [id])
+  tailoredLatex   String?
+  tailoredPdfPath String?
+  emailSubject    String?
+  emailBody       String?
+  emailTemplate   String?
+  status          String   @default("DRAFT")
+  scheduledSendAt DateTime?
+  sentAt          DateTime?
+  followUpAt      DateTime?
+  followUpCount   Int      @default(0)
+  maxFollowUps    Int      @default(2)
+  isColdOutreach  Boolean  @default(false)
+  contactId       String?
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  emailLogs       EmailLog[]
+  @@index([status])
+  @@index([scheduledSendAt])
+}
+
+model EmailLog {
+  id             String      @id @default(cuid())
+  applicationId  String
+  application    Application @relation(fields: [applicationId], references: [id])
+  type           String
+  gmailMessageId String?
+  gmailThreadId  String?
+  status         String      @default("QUEUED")
+  sentAt         DateTime?
+  createdAt      DateTime    @default(now())
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  name           String
+  email          String
+  company        String
+  roleApplied    String?
+  notes          String?
+  emailSentCount Int      @default(0)
+  lastSentAt     DateTime?
+  status         String   @default("NEW")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  applications   Application[]
+  @@index([email])
+}

@@ -1,0 +1,36 @@
+# ======================================================
+# JobFlow — User Configuration
+# Copy this file to user.config.yaml and edit.
+# This file is gitignored — it holds YOUR personal data.
+# ======================================================
+
+# Your information (used in email templates)
+user:
+  name: "Rahul Sharma"
+  email: "rahul@gmail.com"
+  phone: "+91-9876543210"
+  linkedin: "linkedin.com/in/rahulsharma"
+
+# Send window (default: 9-11 AM IST on weekdays)
+send:
+  timezone: "Asia/Kolkata"
+  start_hour: 9
+  end_hour: 11
+  weekdays_only: true
+
+# Follow-up settings
+followup:
+  interval_days: 2
+  max_followups: 2
+
+# Resume settings
+resume:
+  default_file: "data/resume/resume.tex"
+  max_pages: 1
+
+# Cold outreach safety (do NOT change unless you know what you're doing)
+cold_outreach:
+  daily_cap_start: 10
+  daily_cap_max: 50
+  ramp_up_days: 21
+  max_followups: 2
