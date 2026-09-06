@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Sun Sep 06 2026. **Latest commit:** `f97ca00` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Sun Sep 06 2026. **Latest commit:** `87db197` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,8 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `87db197` — docs: note reliable server launch workaround (listen UNKNOWN on Start-Process redirect)
+  - `ab14e38` — docs: update project context (scheduler hardening + AI error surfacing)
   - `f97ca00` — fix: fail-closed scheduler, encrypt scheduler token, real AI error messages (Apps Script now rejects requests when no token is configured and fires exactly one send per trigger instead of deleting all triggers; `gmail_scheduler_token` encrypted at rest like other secrets; all AI libs now surface the real provider error — e.g. free-tier quota — instead of a generic message, via new `src/lib/ai/errors.ts`)
   - Session 2 commits (Gmail-queue architecture + MVVM refactor + error surface work):
     - `a4222db` — feat: queue emails as real Gmail drafts, surface OAuth errors, MVVM refactor (approve → Gmail draft, scheduler no longer auto-sends, services + ViewModels, error surfaces, schema `gmailDraftId`, deleted `send.ts` + test data)
@@ -51,7 +53,7 @@ npx tsc --noEmit     # typecheck — currently clean
 npm run doctor       # env readiness check (scripts/doctor.js)
 ```
 
-Dev server is usually left running detached (`Start-Process`). Scheduler logs `[scheduler] Started — drafting follow-ups into Gmail when due.` on boot.
+Dev server is usually left running detached (`Start-Process`). Scheduler logs `[scheduler] Started — drafting follow-ups into Gmail when due.` on boot. **Currently running:** production server (`next start`) on port 3000 (PID in `netstat -ano | findstr :3000`), started after `next build` (see workaround below).
 
 **Sandbox/startup gotcha (2026-09-06):** `next dev` (Turbopack) can fail with `Error: listen UNKNOWN: unknown error 0.0.0.0:3000` (UV_UNKNOWN -4094) when spawned via `Start-Process npm.cmd ... -RedirectStandardOutput/Error` — the redirect handles seem to break the child's socket bind; the app is fine. Reliable launch: `Start-Process cmd.exe -ArgumentList '/c "npx next start -p 3000 > <temp>\prod-out.log 2> <temp>\prod-err.log"' -WorkingDirectory ... -WindowStyle Hidden` (production server also prints the scheduler line; `next build` must precede it). A port left in a bad state after `taskkill /F` clears within a minute or two — or grab a fresh port.
 
