@@ -28,11 +28,7 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
   - Session 2 commits (Gmail-queue architecture + MVVM refactor + error surface work):
-    - docs: project context updates (this file)
-    - feat: queue emails as real Gmail drafts (draft service, Apps Script scheduler, approve/cancel/del rewrite, scheduler no longer auto-sends)
-    - refactor: MVVM — services layer, apiFetch/ApiError, feature ViewModels, wizard error handling, global error boundary
-    - feat: surface real Google OAuth errors + redirect-URI setup guidance in Settings
-    - chore: schema gmailDraftId, cleanup (deleted unused send.ts + test data)
+    - `a4222db` — feat: queue emails as real Gmail drafts, surface OAuth errors, MVVM refactor (approve → Gmail draft, scheduler no longer auto-sends, services + ViewModels, error surfaces, schema `gmailDraftId`, deleted `send.ts` + test data)
   - `666f699` — fix: PDF/send pipeline, vision extraction, profile save, tz math (previous HEAD)
   - `0bd4ae2` — fix: update Gemini defaults to gemini-3.6-flash, wire DEFAULT_LLM_MODEL env
   - `7e29bc0` — feat: add npm run doctor
