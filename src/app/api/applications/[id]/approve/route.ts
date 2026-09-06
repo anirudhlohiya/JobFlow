@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getNextSendTime } from "@/lib/schedule";
+import { createGmailDraft } from "@/lib/gmail/draft";
+import { isGmailConnected } from "@/lib/gmail/auth";
 
 export async function POST(
   request: Request,
@@ -14,6 +15,16 @@ export async function POST(
     return NextResponse.json({ error: "Application not found." }, { status: 404 });
   }
 
+  if (!(await isGmailConnected())) {
+    return NextResponse.json(
+      {
+        error:
+          "Gmail is not connected yet. Open Settings → Connections and sign in with Google first — the email is queued as a real draft inside Gmail.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (!application.hrEmail || !application.emailSubject || !application.emailBody) {
     return NextResponse.json(
       {
@@ -24,17 +35,42 @@ export async function POST(
     );
   }
 
-  const scheduledSendAt = getNextSendTime();
+  try {
+    const result = await createGmailDraft({
+      to: application.hrEmail,
+      subject: application.emailSubject,
+      body: application.emailBody,
+      pdfPath: application.tailoredPdfPath,
+    });
 
-  const updated = await prisma.application.update({
-    where: { id },
-    data: {
-      status: "QUEUED",
-      scheduledSendAt,
-      // Preserve follow-up count (approving a follow-up must not reset it)
-      followUpCount: application.followUpCount,
-    },
-  });
+    const updated = await prisma.application.update({
+      where: { id },
+      data: {
+        status: "QUEUED_IN_GMAIL",
+        gmailDraftId: result.draftId,
+        scheduledSendAt: result.scheduledSendAt,
+        sentAt: null,
+      },
+    });
 
-  return NextResponse.json({ application: updated });
+    await prisma.emailLog.create({
+      data: {
+        applicationId: id,
+        type: result.autoScheduled ? "DRAFT_SCHEDULED" : "DRAFT_CREATED",
+        status: "QUEUED",
+        sentAt: result.scheduledSendAt ? new Date(result.scheduledSendAt) : null,
+      },
+    });
+
+    return NextResponse.json({
+      application: updated,
+      draft: result,
+    });
+  } catch (error) {
+    console.error(`[applications/approve] Failed queuing draft for ${id}:`, error);
+    return NextResponse.json(
+      { error: (error as Error).message || "Failed to create the Gmail draft." },
+      { status: 500 }
+    );
+  }
 }

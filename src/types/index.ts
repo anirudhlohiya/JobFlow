@@ -32,6 +32,7 @@ export type ApplicationStatus =
   | "DRAFT"
   | "PENDING_REVIEW"
   | "QUEUED"
+  | "QUEUED_IN_GMAIL"
   | "SENT"
   | "FOLLOW_UP_PENDING"
   | "FOLLOWED_UP"

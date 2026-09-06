@@ -11,15 +11,33 @@ const TOKEN_KEY = "google_refresh_token";
 const EMAIL_KEY = "google_connected_email";
 
 function getOAuth2Client() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  return new google.auth.OAuth2(getClientId(), getClientSecret(), getRedirectUri());
+}
+
+export function getRedirectUri(): string {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) {
+  if (!redirectUri) {
     throw new Error(
-      "Google OAuth is not configured. Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI to your .env file."
+      "GOOGLE_REDIRECT_URI is not set in your .env file. It must be exactly: http://localhost:3000/api/auth/google/callback"
     );
   }
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  return redirectUri;
+}
+
+function getClientId(): string {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("GOOGLE_CLIENT_ID is not set. Add it to your .env file.");
+  }
+  return clientId;
+}
+
+function getClientSecret(): string {
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientSecret) {
+    throw new Error("GOOGLE_CLIENT_SECRET is not set. Add it to your .env file.");
+  }
+  return clientSecret;
 }
 
 export function getAuthUrl(): string {

@@ -1,21 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IngestionStep } from "@/components/wizard/ingestion-step";
 import { ExtractionReviewStep } from "@/components/wizard/extraction-review-step";
 import { ResumeEmailStep } from "@/components/wizard/resume-email-step";
 import { ApproveStep } from "@/components/wizard/approve-step";
-import type { ExtractedJob } from "@/types";
-
-const STEPS = ["Ingest", "Review Extraction", "Resume & Email", "Approve & Queue"];
+import { useNewApplicationViewModel, WIZARD_STEPS } from "@/features/new-application/useNewApplicationViewModel";
 
 export default function NewApplicationPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [job, setJob] = useState<ExtractedJob | null>(null);
-  const [rawText, setRawText] = useState("");
-  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const vm = useNewApplicationViewModel();
 
   return (
     <div className="flex flex-col gap-8">
@@ -30,95 +24,74 @@ export default function NewApplicationPage() {
 
       {/* Step indicator */}
       <div className="flex items-center gap-3">
-        {STEPS.map((label, i) => (
+        {WIZARD_STEPS.map((label, i) => (
           <div key={label} className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-medium transition-colors ${
-                  i < step
+                  i < vm.step
                     ? "bg-ink text-white"
-                    : i === step
+                    : i === vm.step
                       ? "bg-white border border-ink text-ink"
                       : "bg-hairline-soft text-mute border border-hairline"
                 }`}
               >
-                {i < step ? "✓" : i + 1}
+                {i < vm.step ? "✓" : i + 1}
               </div>
               <span
                 className={`text-[13px] ${
-                  i === step ? "text-ink font-medium" : "text-mute"
+                  i === vm.step ? "text-ink font-medium" : "text-mute"
                 }`}
               >
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < WIZARD_STEPS.length - 1 && (
               <div className="w-8 h-px bg-hairline" />
             )}
           </div>
         ))}
       </div>
 
+      {vm.error && (
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
+          {vm.error}
+        </div>
+      )}
+
       {/* Step content */}
-      {step === 0 && (
+      {vm.step === 0 && (
         <IngestionStep
-          onComplete={({ extracted, text }) => {
-            setJob(extracted);
-            setRawText(text);
-            setStep(1);
+          onComplete={({ extracted, text, images }) => {
+            vm.setExtracted(extracted, text, images);
           }}
         />
       )}
 
-      {step === 1 && job && (
+      {vm.step === 1 && vm.job && (
         <ExtractionReviewStep
-          job={job}
-          onBack={() => setStep(0)}
+          job={vm.job}
+          onBack={() => vm.goTo(0)}
           onComplete={async (finalJob) => {
-            setJob(finalJob);
-            // Create the application record
-            const res = await fetch("/api/applications", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                company: finalJob.company,
-                role: finalJob.role,
-                hrEmail: finalJob.hrEmail,
-                hrName: finalJob.hrName,
-                skills: finalJob.skills,
-                experience: finalJob.experience,
-                location: finalJob.location,
-                isRemote: finalJob.isRemote,
-                salary: finalJob.salary,
-                source: finalJob.source,
-                sourceRawText: rawText,
-              }),
-            });
-            const data = await res.json();
-            if (res.ok && data.application) {
-              setApplicationId(data.application.id);
-              setStep(2);
-            } else {
-              alert(data.error ?? "Failed to create application.");
-            }
+            await vm.saveApplication(finalJob);
           }}
         />
       )}
 
-      {step === 2 && applicationId && job && (
+      {vm.step === 2 && vm.applicationId && vm.job && (
         <ResumeEmailStep
-          applicationId={applicationId}
-          job={job}
-          onBack={() => setStep(1)}
-          onComplete={() => setStep(3)}
+          applicationId={vm.applicationId}
+          job={vm.job}
+          onBack={() => vm.goTo(1)}
+          onComplete={() => vm.goTo(3)}
         />
       )}
 
-      {step === 3 && applicationId && job && (
+      {vm.step === 3 && vm.applicationId && vm.job && (
         <ApproveStep
-          applicationId={applicationId}
-          job={job}
-          onBack={() => setStep(2)}
+          applicationId={vm.applicationId}
+          job={vm.job}
+          onBack={() => vm.goTo(2)}
           onComplete={() => router.push("/")}
         />
       )}

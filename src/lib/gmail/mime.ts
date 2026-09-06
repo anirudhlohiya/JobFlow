@@ -1,21 +1,21 @@
-import { google } from "googleapis";
-import { getOAuthClient } from "./auth";
+/**
+ * Shared MIME construction for the Gmail API.
+ * Used by both immediate send and draft creation so the two stay identical.
+ */
 
-const BOUNDARY = `Boundary_${Date.now()}`;
+export interface MimeAttachment {
+  filename: string;
+  content: string | Buffer;
+}
 
-export interface SendEmailParams {
+export function buildMimeMessage(params: {
   to: string;
   subject: string;
   body: string;
-  attachments?: { filename: string; content: string | Buffer }[];
+  attachments?: MimeAttachment[];
   threadId?: string;
-}
-
-export async function sendEmail(params: SendEmailParams): Promise<{ messageId: string; threadId: string }> {
-  const oauth = await getOAuthClient();
-  if (!oauth) throw new Error("Gmail not connected");
-
-  const gmail = google.gmail({ version: "v1", auth: oauth.client });
+}): { raw: string; threadId?: string } {
+  const BOUNDARY = `Boundary_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
   const rawParts: string[] = [];
 
@@ -50,23 +50,10 @@ export async function sendEmail(params: SendEmailParams): Promise<{ messageId: s
 
   const raw = Buffer.from(rawParts.join("\r\n"), "utf8").toString("base64");
 
-  const reqBody: Record<string, unknown> = { raw };
-  if (params.threadId) {
-    reqBody.threadId = params.threadId;
-  }
-
-  const res = await gmail.users.messages.send({
-    userId: "me",
-    requestBody: reqBody as never,
-  });
-
-  return {
-    messageId: res.data.id ?? "",
-    threadId: res.data.threadId ?? params.threadId ?? "",
-  };
+  return params.threadId ? { raw, threadId: params.threadId } : { raw };
 }
 
-function encodeHeader(value: string): string {
+export function encodeHeader(value: string): string {
   if (/[^\x00-\x7F]/.test(value) || value.length > 60) {
     return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
   }

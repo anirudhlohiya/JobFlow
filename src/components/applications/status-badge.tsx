@@ -5,6 +5,7 @@ export function getStatusBadgeClass(status: string): string {
     case "PENDING_REVIEW":
       return "bg-warning-soft text-warning-deep";
     case "QUEUED":
+    case "QUEUED_IN_GMAIL":
       return "bg-link-soft text-link-deep";
     case "SENT":
       return "bg-cyan-soft text-[#007970]";

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { getStatusBadgeClass } from "@/components/applications/status-badge";
 import { formatCountdown } from "@/lib/format";
+import { statusLabel, STATUS_LABELS } from "@/lib/status";
 
 type Application = {
   id: string;
@@ -15,17 +16,6 @@ type Application = {
   followUpAt: string | null;
   sentAt: string | null;
   createdAt: string;
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  PENDING_REVIEW: "Pending Review",
-  QUEUED: "Queued",
-  SENT: "Sent",
-  FOLLOW_UP_PENDING: "Follow-up Pending",
-  FOLLOWED_UP: "Followed Up",
-  REPLIED: "Replied",
-  ARCHIVED: "Archived",
 };
 
 export default function ApplicationsPage() {
@@ -103,18 +93,20 @@ export default function ApplicationsPage() {
                     </Link>
                   </Td>
                   <Td className="text-body">{app.company}</Td>
-                  <Td>
-                    <Badge className={`${getStatusBadgeClass(app.status)} border rounded-full font-medium`}>
-                      {STATUS_LABELS[app.status] ?? app.status}
-                    </Badge>
-                  </Td>
-                  <Td className="text-mute">
-                    {app.scheduledSendAt
-                      ? `sends in ${formatCountdown(new Date(app.scheduledSendAt))}`
-                      : app.followUpAt
-                        ? `follow-up ${formatCountdown(new Date(app.followUpAt))}`
-                        : "—"}
-                  </Td>
+<Td>
+<Badge className={`${getStatusBadgeClass(app.status)} border rounded-full font-medium`}>
+  {statusLabel(app.status)}
+</Badge>
+</Td>
+<Td className="text-mute">
+  {app.scheduledSendAt
+    ? `sends in ${formatCountdown(new Date(app.scheduledSendAt))}`
+    : app.status === "QUEUED_IN_GMAIL"
+      ? "waiting in Gmail"
+      : app.followUpAt
+        ? `follow-up ${formatCountdown(new Date(app.followUpAt))}`
+        : "—"}
+</Td>
                   <Td className="text-mute">{new Date(app.createdAt).toLocaleDateString()}</Td>
                 </tr>
               ))

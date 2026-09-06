@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { deleteGmailDraft } from "@/lib/gmail/draft";
 
 export async function GET(
   _request: Request,
@@ -62,6 +63,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const application = await prisma.application.findUnique({ where: { id } });
+  if (application?.gmailDraftId) {
+    await deleteGmailDraft(application.gmailDraftId).catch((err) =>
+      console.error("[applications/delete] Could not delete Gmail draft:", err)
+    );
+  }
   await prisma.emailLog.deleteMany({ where: { applicationId: id } });
   await prisma.application.delete({ where: { id } });
   return NextResponse.json({ ok: true });

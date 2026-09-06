@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,51 +7,12 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { getStatusBadgeClass } from "@/components/applications/status-badge";
 import { formatCountdown } from "@/lib/format";
-
-type Application = {
-  id: string;
-  company: string;
-  role: string;
-  status: string;
-  scheduledSendAt: string | null;
-  followUpAt: string | null;
-  sentAt: string | null;
-  createdAt: string;
-  emailLogs: { id: string }[];
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  PENDING_REVIEW: "Pending Review",
-  QUEUED: "Queued",
-  SENT: "Sent",
-  FOLLOW_UP_PENDING: "Follow-up Pending",
-  FOLLOWED_UP: "Followed Up",
-  REPLIED: "Replied",
-  ARCHIVED: "Archived",
-};
+import { statusLabel, DRAFTS_URL } from "@/lib/status";
+import { useDashboardViewModel } from "@/features/dashboard/useDashboardViewModel";
+import { ExternalLink } from "lucide-react";
 
 export default function DashboardPage() {
-  const [apps, setApps] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/applications")
-      .then((r) => r.json())
-      .then((data) => {
-        setApps(data.applications ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const total = apps.length;
-  const queued = apps.filter((a) => a.status === "QUEUED");
-  const sent = apps.filter((a) => a.status === "SENT" || a.status === "FOLLOW_UP_PENDING" || a.status === "FOLLOWED_UP");
-  const replied = apps.filter((a) => a.status === "REPLIED");
-  const followUpsDue = apps.filter(
-    (a) => a.status === "FOLLOW_UP_PENDING"
-  );
+  const vm = useDashboardViewModel();
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,49 +24,84 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-body mt-1">
-          Every application, one pipeline: paste → tailor → draft → approve → send.
+          One pipeline: paste → tailor → draft → queue in Gmail.
         </p>
       </div>
 
+      {vm.gmailChecking ? null : !vm.gmailConnected ? (
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
+          Gmail isn&apos;t connected, so nothing will actually be queued.{" "}
+          <Link href="/settings" className="underline font-medium">
+            Connect Google in Settings
+          </Link>{" "}
+          before approving applications.
+        </div>
+      ) : null}
+
+      {vm.error && (
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
+          {vm.error}
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Applications" value={total} />
-        <StatCard label="Queued" value={queued.length} />
-        <StatCard label="Sent" value={sent.length} />
-        <StatCard label="Replied" value={replied.length} />
+        <StatCard label="Total Applications" value={vm.total} />
+        <StatCard label="In Gmail" value={vm.queued.length} />
+        <StatCard label="Sent" value={vm.sent.length} />
+        <StatCard label="Replied" value={vm.replied.length} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sending Today */}
+        {/* Queued as Gmail drafts */}
         <Card>
           <CardHeader>
             <CardTitle className="text-[20px] font-semibold tracking-[-0.4px]">
-              Sending Today
+              Gmail Drafts
             </CardTitle>
+            <p className="text-sm text-body">
+              Emails sit here until Gmail sends them — nothing runs on this machine.
+            </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {loading ? (
+            {vm.loading ? (
               <p className="text-sm text-mute">Loading…</p>
-            ) : queued.length === 0 ? (
+            ) : vm.queued.length === 0 ? (
               <p className="text-sm text-mute">
-                Nothing queued. Start a{" "}
+                No drafts queued. Start a{" "}
                 <Link href="/new" className="text-link hover:underline">
                   new application
                 </Link>
                 .
               </p>
             ) : (
-              queued.slice(0, 5).map((app) => (
-                <div key={app.id} className="flex items-center justify-between">
+              vm.queued.slice(0, 5).map((app) => (
+                <Link
+                  key={app.id}
+                  href={`/applications/${app.id}`}
+                  className="flex items-center justify-between hover:bg-hairline-soft rounded-md px-2 -mx-2 py-1"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{app.role}</p>
                     <p className="text-[12px] text-mute">{app.company}</p>
                   </div>
                   <span className="font-mono text-[12px] text-mute shrink-0">
-                    {formatCountdown(new Date(app.scheduledSendAt!))}
+                    {app.scheduledSendAt
+                      ? formatCountdown(new Date(app.scheduledSendAt))
+                      : "in Gmail"}
                   </span>
-                </div>
+                </Link>
               ))
+            )}
+            {vm.queued.length > 0 && (
+              <a
+                href={DRAFTS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-[12px] text-link hover:underline"
+              >
+                <ExternalLink className="w-3 h-3" /> Open Gmail drafts
+              </a>
             )}
           </CardContent>
         </Card>
@@ -119,12 +114,12 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {loading ? (
+            {vm.loading ? (
               <p className="text-sm text-mute">Loading…</p>
-            ) : followUpsDue.length === 0 ? (
-              <p className="text-sm text-mute">No follow-ups awaiting approval.</p>
+            ) : vm.followUpsDue.length === 0 ? (
+              <p className="text-sm text-mute">No follow-ups awaiting action.</p>
             ) : (
-              followUpsDue.slice(0, 5).map((app) => (
+              vm.followUpsDue.slice(0, 5).map((app) => (
                 <Link
                   key={app.id}
                   href={`/applications/${app.id}`}
@@ -135,7 +130,7 @@ export default function DashboardPage() {
                     <p className="text-[12px] text-mute">{app.company}</p>
                   </div>
                   <span className="text-[12px] text-warning-deep shrink-0">
-                    needs approval
+                    due {app.followUpAt ? formatCountdown(new Date(app.followUpAt)) : "now"}
                   </span>
                 </Link>
               ))
@@ -179,13 +174,13 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {vm.loading ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-sm text-mute">
                     Loading applications…
                   </td>
                 </tr>
-              ) : apps.length === 0 ? (
+              ) : vm.apps.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-sm text-mute">
                     No applications yet.{" "}
@@ -195,7 +190,7 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ) : (
-                apps.slice(0, 10).map((app) => (
+                vm.apps.slice(0, 10).map((app) => (
                   <tr
                     key={app.id}
                     className="border-b border-hairline last:border-b-0 hover:bg-hairline-soft"
@@ -208,15 +203,17 @@ export default function DashboardPage() {
                     <Td className="text-body">{app.company}</Td>
                     <Td>
                       <Badge className={`${getStatusBadgeClass(app.status)} border rounded-full font-medium`}>
-                        {STATUS_LABELS[app.status] ?? app.status}
+                        {statusLabel(app.status)}
                       </Badge>
                     </Td>
                     <Td className="text-mute">
                       {app.scheduledSendAt
                         ? `sends in ${formatCountdown(new Date(app.scheduledSendAt))}`
-                        : app.followUpAt
-                          ? `follow-up ${formatCountdown(new Date(app.followUpAt))}`
-                          : "—"}
+                        : app.status === "QUEUED_IN_GMAIL"
+                          ? "waiting in Gmail"
+                          : app.followUpAt
+                            ? `follow-up ${formatCountdown(new Date(app.followUpAt))}`
+                            : "—"}
                     </Td>
                   </tr>
                 ))

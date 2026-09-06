@@ -1,23 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Upload,
-} from "lucide-react";
-
-type SettingsData = Record<string, unknown> & {
-  gmail: { connected: boolean; email?: string };
-  provider: { configured: boolean };
-};
+import { Loader2, CheckCircle2, XCircle, Upload, Link2 } from "lucide-react";
+import { useSettingsViewModel } from "@/features/settings/useSettingsViewModel";
 
 export default function SettingsPage() {
   return (
@@ -29,147 +20,13 @@ export default function SettingsPage() {
 
 function SettingsContent() {
   const searchParams = useSearchParams();
-  const [settings, setSettings] = useState<SettingsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [msgType, setMsgType] = useState<"ok" | "err">("ok");
+  const vm = useSettingsViewModel();
 
-  type ResumeRow = { id: string; name: string; isDefault: boolean; updatedAt: string };
-  const [resumes, setResumes] = useState<ResumeRow[]>([]);
-
-  // Provider keys
-  const [provider, setProvider] = useState("openai");
-  const [openaiKey, setOpenaiKey] = useState("");
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [geminiKey, setGeminiKey] = useState("");
-  const [groqKey, setGroqKey] = useState("");
-  const [model, setModel] = useState("");
-
-  const defaultResume = resumes.find((r) => r.isDefault) ?? resumes[0];
-
-  // Gmail
-  const gmailConnected = settings?.gmail?.connected ?? false;
-  const gmailEmail = settings?.gmail?.email;
   const gmailQuery = searchParams.get("gmail");
   const gmailConnectedEmail = searchParams.get("email");
+  const gmailErrorReason = searchParams.get("reason");
 
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [userPhone, setUserPhone] = useState("");
-  const [userLinkedin, setUserLinkedin] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setSettings(data);
-        setProvider((data.activeProvider?.provider as string) ?? "openai");
-        setModel(data.activeProvider?.model ?? "");
-        setOpenaiKey((data.llm_key_openai_api_key as string) ?? "");
-        setAnthropicKey((data.llm_key_anthropic_api_key as string) ?? "");
-        setGeminiKey((data.llm_key_gemini_api_key as string) ?? "");
-        setGroqKey((data.llm_key_groq_api_key as string) ?? "");
-        setUserName(data.user?.name ?? "");
-        setUserEmail(data.user?.email ?? "");
-        setUserPhone(data.user?.phone ?? "");
-        setUserLinkedin(data.user?.linkedin ?? "");
-      })
-      .catch(() => setMsgType("err"))
-      .finally(() => setLoading(false));
-
-    fetch("/api/resume")
-      .then((r) => r.json())
-      .then((data) => setResumes(data.resumes ?? []))
-      .catch(() => setResumes([]));
-  }, []);
-
-  async function handleSaveProvider() {
-    setSaving(true);
-    setMsg(null);
-    const payload: Record<string, string> = {
-      llm_provider: provider,
-    };
-    if (model.trim()) payload.llm_model = model.trim();
-    if (openaiKey) payload.llm_key_openai_api_key = openaiKey;
-    if (anthropicKey) payload.llm_key_anthropic_api_key = anthropicKey;
-    if (geminiKey) payload.llm_key_gemini_api_key = geminiKey;
-    if (groqKey) payload.llm_key_groq_api_key = groqKey;
-
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-setSaving(false);
-    if (res.ok) {
-      setMsg("Provider settings saved.");
-      setMsgType("ok");
-      window.location.reload();
-    } else {
-      setMsg("Failed to save: " + (data.error ?? "unknown error"));
-      setMsgType("err");
-    }
-  }
-
-  async function handleUploadResume(file: File | null) {
-    if (!file) return;
-    setUploading(true);
-    setMsg(null);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("isDefault", "true");
-
-    try {
-      const res = await fetch("/api/resume/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMsg(`Resume "${data.resume.name}" uploaded successfully.`);
-        setMsgType("ok");
-        const r = await fetch("/api/resume");
-        const rd = await r.json();
-        setResumes(rd.resumes ?? []);
-      } else {
-        setMsg("Upload failed: " + (data.error ?? "unknown error"));
-        setMsgType("err");
-      }
-    } catch {
-      setMsg("Upload failed: network error.");
-      setMsgType("err");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handleSaveUser() {
-    setSaving(true);
-    setMsg(null);
-const res = await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_name: userName,
-        user_email: userEmail,
-        user_phone: userPhone,
-        user_linkedin: userLinkedin,
-      }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setMsg("Profile saved.");
-      setMsgType("ok");
-    } else {
-      setMsg("Failed to save profile.");
-      setMsgType("err");
-    }
-  }
-
-  if (loading) {
+  if (vm.loading) {
     return <p className="text-sm text-mute py-10">Loading settings…</p>;
   }
 
@@ -187,19 +44,23 @@ const res = await fetch("/api/settings", {
         </p>
       </div>
 
-      {msg && (
-        <div className={`rounded-md border px-4 py-3 text-sm ${msgType === "ok" ? "bg-cyan-soft border-cyan/30 text-[#007970]" : "bg-warning-soft border-warning/30 text-warning-deep"}`}>
-          {msg}
+      {vm.banner && (
+        <div className={`rounded-md border px-4 py-3 text-sm ${vm.banner.type === "ok" ? "bg-cyan-soft border-cyan/30 text-[#007970]" : "bg-warning-soft border-warning/30 text-warning-deep"}`}>
+          {vm.banner.message}
         </div>
       )}
+
       {gmailQuery === "connected" && (
         <div className="rounded-md bg-cyan-soft border border-cyan/30 px-4 py-3 text-sm text-[#007970]">
           Gmail connected: {gmailConnectedEmail}
         </div>
       )}
+
       {gmailQuery === "error" && (
         <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
-          Gmail connection failed. Check GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in your .env file.
+          <p className="font-medium mb-1">Gmail connection failed.</p>
+          {gmailErrorReason ? <p className="mb-2">Reason: {gmailErrorReason}</p> : null}
+          <GmailSetupGuide redirectUri={vm.settings?.gmail?.redirectUri ?? null} hasCredentials={vm.settings?.gmail?.hasCredentials ?? false} />
         </div>
       )}
 
@@ -214,7 +75,7 @@ const res = await fetch("/api/settings", {
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <RadioGroup value={provider} onValueChange={setProvider} className="flex flex-wrap gap-4">
+          <RadioGroup value={vm.provider} onValueChange={vm.setProvider} className="flex flex-wrap gap-4">
             {[
               { value: "openai", label: "OpenAI", placeholder: "sk-…" },
               { value: "anthropic", label: "Anthropic", placeholder: "sk-ant-…" },
@@ -231,34 +92,42 @@ const res = await fetch("/api/settings", {
           </RadioGroup>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {provider === "openai" && (
+            {vm.provider !== "openai" && vm.apiKeys["openai"] ? (
+              <ProviderKeyField
+                label="OpenAI API Key"
+                value={vm.apiKeys["openai"]}
+                onChange={(v) => vm.setApiKeys({ ...vm.apiKeys, openai: v })}
+                placeholder="sk-…"
+              />
+            ) : null}
+            {vm.provider === "openai" && (
               <Field label="OpenAI API Key">
-                <Input type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} placeholder="sk-…" className="bg-white border-hairline rounded-md" />
+                <Input type="password" value={vm.apiKeys["openai"]} onChange={(e) => vm.setApiKeys({ ...vm.apiKeys, openai: e.target.value })} placeholder="sk-…" className="bg-white border-hairline rounded-md" />
               </Field>
             )}
-            {provider === "anthropic" && (
+            {vm.provider === "anthropic" && (
               <Field label="Anthropic API Key">
-                <Input type="password" value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)} placeholder="sk-ant-…" className="bg-white border-hairline rounded-md" />
+                <Input type="password" value={vm.apiKeys["anthropic"]} onChange={(e) => vm.setApiKeys({ ...vm.apiKeys, anthropic: e.target.value })} placeholder="sk-ant-…" className="bg-white border-hairline rounded-md" />
               </Field>
             )}
-            {provider === "google" && (
+            {vm.provider === "google" && (
               <Field label="Gemini API Key">
-                <Input type="password" value={geminiKey} onChange={(e) => setGeminiKey(e.target.value)} placeholder="AIza…" className="bg-white border-hairline rounded-md" />
+                <Input type="password" value={vm.apiKeys["google"]} onChange={(e) => vm.setApiKeys({ ...vm.apiKeys, google: e.target.value })} placeholder="AIza…" className="bg-white border-hairline rounded-md" />
               </Field>
             )}
-            {provider === "groq" && (
+            {vm.provider === "groq" && (
               <Field label="Groq API Key">
-                <Input type="password" value={groqKey} onChange={(e) => setGroqKey(e.target.value)} placeholder="gsk_…" className="bg-white border-hairline rounded-md" />
+                <Input type="password" value={vm.apiKeys["groq"]} onChange={(e) => vm.setApiKeys({ ...vm.apiKeys, groq: e.target.value })} placeholder="gsk_…" className="bg-white border-hairline rounded-md" />
               </Field>
             )}
             <Field label="Model (optional)">
-              <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. gpt-4o-mini, llama-3.3-70b-versatile" className="bg-white border-hairline rounded-md" />
+              <Input value={vm.model} onChange={(e) => vm.setModel(e.target.value)} placeholder="e.g. gpt-4o-mini, llama-3.3-70b-versatile" className="bg-white border-hairline rounded-md" />
             </Field>
           </div>
 
           <div className="flex items-center justify-end">
-            <Button onClick={handleSaveProvider} disabled={saving} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Provider"}
+            <Button onClick={vm.saveProvider} disabled={vm.saving} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+              {vm.saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Provider"}
             </Button>
           </div>
         </CardContent>
@@ -271,44 +140,71 @@ const res = await fetch("/api/settings", {
             Gmail Connection
           </CardTitle>
           <p className="text-sm text-body">
-            Emails are sent from YOUR Gmail via OAuth — recipients see a real person.
+            Emails are queued as real drafts in YOUR Gmail — recipients see a real person, and nothing depends on this machine at send time.
           </p>
         </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4">
-          {gmailConnected ? (
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-[#007970]" />
-              <div>
-                <p className="text-sm font-medium text-ink">Gmail Connected</p>
-                <p className="text-[12px] text-mute">{gmailEmail || "—"}</p>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-4">
+            {vm.gmailConnected ? (
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-[#007970]" />
+                <div>
+                  <p className="text-sm font-medium text-ink">Gmail Connected</p>
+                  <p className="text-[12px] text-mute">{vm.settings?.gmail?.email || "—"}</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <XCircle className="w-5 h-5 text-warning" />
-              <div>
-                <p className="text-sm font-medium text-ink">Not connected</p>
-                <p className="text-[12px] text-mute">Link your Gmail to enable sending.</p>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            {gmailConnected ? (
-              <Button
-                variant="ghost"
-                className="rounded-md h-9 text-destructive"
-                onClick={async () => {
-                  await fetch("/api/auth/google/disconnect", { method: "POST" });
-                  window.location.reload();
-                }}
-              >
-                Disconnect
-              </Button>
             ) : (
-              <Button render={<a href="/api/auth/google" />} nativeButton={false} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
-                Connect Gmail
-              </Button>
+              <div className="flex items-center gap-3">
+                <XCircle className="w-5 h-5 text-warning" />
+                <div>
+                  <p className="text-sm font-medium text-ink">Not connected</p>
+                  <p className="text-[12px] text-mute">Link your Gmail so approved applications can be queued as drafts.</p>
+                </div>
+              </div>
             )}
+            <div className="flex items-center gap-2">
+              {vm.gmailConnected ? (
+                <Button variant="ghost" className="rounded-md h-9 text-destructive" onClick={vm.disconnectGmail}>
+                  Disconnect
+                </Button>
+              ) : (
+                <Button render={<a href={vm.gmailConnectUrl} />} nativeButton={false} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+                  Connect Gmail
+                </Button>
+              )}
+            </div>
+          </div>
+          {!vm.gmailConnected && (
+            <GmailSetupGuide redirectUri={vm.settings?.gmail?.redirectUri ?? null} hasCredentials={vm.settings?.gmail?.hasCredentials ?? false} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 2b. Gmail Scheduler (optional auto-send) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-[20px] font-semibold tracking-[-0.4px]">
+            Gmail Scheduler (optional)
+          </CardTitle>
+          <p className="text-sm text-body">
+            Want it to send by itself at the next send-window? Deploy the free Google Apps Script
+            from <span className="font-mono">scripts/gmail-scheduler/Code.gs</span> once, then paste the web-app
+            URL and a token here. Approvals then auto-send from Google&apos;s cloud — no local process needed.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Scheduler URL" sub="Apps Script web app /exec URL">
+              <Input value={vm.schedulerUrl} onChange={(e) => vm.setSchedulerUrl(e.target.value)} placeholder="https://script.google.com/macros/s/XXX/exec" className="bg-white border-hairline rounded-md" />
+            </Field>
+            <Field label="Scheduler Token" sub="must match the token you set in the script">
+              <Input type="password" value={vm.schedulerToken} onChange={(e) => vm.setSchedulerToken(e.target.value)} placeholder="your chosen token" className="bg-white border-hairline rounded-md" />
+            </Field>
+          </div>
+          <div className="flex items-center justify-end">
+            <Button onClick={vm.saveScheduler} disabled={vm.saving} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+              {vm.saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Scheduler"}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -324,13 +220,13 @@ const res = await fetch("/api/settings", {
           </p>
         </CardHeader>
         <CardContent>
-          {defaultResume && (
+          {vm.defaultResume && (
             <div className="mb-4 flex items-center justify-between rounded-md border border-hairline bg-canvas px-4 py-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-ink truncate">{defaultResume.name}</p>
+                <p className="text-sm font-medium text-ink truncate">{vm.defaultResume.name}</p>
                 <p className="text-[12px] text-mute">
-                  Uploaded {new Date(defaultResume.updatedAt).toLocaleString()}
-                  {defaultResume.isDefault ? " · default" : ""}
+                  Uploaded {new Date(vm.defaultResume.updatedAt).toLocaleString()}
+                  {vm.defaultResume.isDefault ? " · default" : ""}
                 </p>
               </div>
               <CheckCircle2 className="w-5 h-5 text-[#007970] shrink-0" />
@@ -339,12 +235,15 @@ const res = await fetch("/api/settings", {
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 rounded-md border border-hairline bg-white px-4 py-2.5 cursor-pointer hover:border-body">
               <Upload className="w-4 h-4 text-mute" />
-              <span className="text-sm text-body">{uploading ? "Uploading…" : defaultResume ? "Replace .tex file" : "Choose .tex file"}</span>
+              <span className="text-sm text-body">{vm.uploading ? "Uploading…" : vm.defaultResume ? "Replace .tex file" : "Choose .tex file"}</span>
               <input
                 type="file"
                 accept=".tex,text/plain"
                 className="hidden"
-                onChange={(e) => handleUploadResume(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) vm.uploadResume(file);
+                }}
               />
             </label>
             <p className="text-[12px] text-mute">
@@ -366,24 +265,65 @@ const res = await fetch("/api/settings", {
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Name" sub="config: user.name">
-            <Input value={userName} onChange={(e) => setUserName(e.target.value)} className="bg-white border-hairline rounded-md" />
+            <Input value={vm.userName} onChange={(e) => vm.setUserName(e.target.value)} className="bg-white border-hairline rounded-md" />
           </Field>
           <Field label="Email" sub="config: user.email">
-            <Input value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="bg-white border-hairline rounded-md" />
+            <Input value={vm.userEmail} onChange={(e) => vm.setUserEmail(e.target.value)} className="bg-white border-hairline rounded-md" />
           </Field>
           <Field label="Phone" sub="config: user.phone">
-            <Input value={userPhone} onChange={(e) => setUserPhone(e.target.value)} className="bg-white border-hairline rounded-md" />
+            <Input value={vm.userPhone} onChange={(e) => vm.setUserPhone(e.target.value)} className="bg-white border-hairline rounded-md" />
           </Field>
           <Field label="LinkedIn" sub="config: user.linkedin">
-            <Input value={userLinkedin} onChange={(e) => setUserLinkedin(e.target.value)} className="bg-white border-hairline rounded-md" />
+            <Input value={vm.userLinkedin} onChange={(e) => vm.setUserLinkedin(e.target.value)} className="bg-white border-hairline rounded-md" />
           </Field>
           <div className="md:col-span-2 flex justify-end">
-            <Button onClick={handleSaveUser} disabled={saving} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
+            <Button onClick={vm.saveUser} disabled={vm.saving} className="rounded-md h-9 bg-ink text-white hover:bg-ink/90">
               Save Profile
             </Button>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function GmailSetupGuide({
+  redirectUri,
+  hasCredentials,
+}: {
+  redirectUri: string | null;
+  hasCredentials: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-hairline bg-canvas px-4 py-3 text-[13px] text-body flex flex-col gap-2">
+      <p className="font-medium text-ink flex items-center gap-1.5">
+        <Link2 className="w-3.5 h-3.5" /> How to connect Google
+      </p>
+      {!hasCredentials && (
+        <p>
+          1. Add <span className="font-mono">GOOGLE_CLIENT_ID</span> and{" "}
+          <span className="font-mono">GOOGLE_CLIENT_SECRET</span> to your{" "}
+          <span className="font-mono">.env</span> file.
+        </p>
+      )}
+      <p>
+        1. In Google Cloud Console, enable the <strong>Gmail API</strong> for your project.
+      </p>
+      <p>
+        2. Under <strong>Credentials</strong>, open your OAuth 2.0 Client ID and add this
+        exact <strong>Authorized redirect URI</strong>:
+      </p>
+      <pre className="font-mono text-[12px] bg-white border border-hairline rounded-md px-3 py-2 overflow-x-auto">
+        {redirectUri ?? "http://localhost:3000/api/auth/google/callback"}
+      </pre>
+      <p>
+        3. Click <strong>Connect Gmail</strong> above and approve the consent screen.
+      </p>
+      <p className="text-[12px] text-mute">
+        Getting <span className="font-mono">redirect_uri_mismatch</span>? It always means step 2
+        wasn&apos;t saved — the URI above must be registered exactly, including{" "}
+        <span className="font-mono">http://localhost:3000</span>.
+      </p>
     </div>
   );
 }
@@ -395,5 +335,23 @@ function Field({ label, sub, children }: { label: string; sub?: string; children
       {sub ? <p className="text-[12px] text-faint -mt-1">{sub}</p> : null}
       {children}
     </div>
+  );
+}
+
+function ProviderKeyField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <Field label={label}>
+      <Input type="password" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white border-hairline rounded-md" />
+    </Field>
   );
 }

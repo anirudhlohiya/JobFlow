@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { deleteGmailDraft } from "@/lib/gmail/draft";
 
 export async function POST(
   request: Request,
@@ -12,11 +13,18 @@ export async function POST(
     return NextResponse.json({ error: "Application not found." }, { status: 404 });
   }
 
+  if (application.gmailDraftId) {
+    await deleteGmailDraft(application.gmailDraftId).catch((err) =>
+      console.error("[applications/cancel] Could not delete Gmail draft:", err)
+    );
+  }
+
   const updated = await prisma.application.update({
     where: { id },
     data: {
       status: "DRAFT",
       scheduledSendAt: null,
+      gmailDraftId: null,
     },
   });
 

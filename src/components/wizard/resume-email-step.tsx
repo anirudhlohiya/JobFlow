@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, RefreshCw } from "lucide-react";
 import type { ExtractedJob } from "@/types";
+import { listResumes, tailorResume, compileResume, pdfUrlFor } from "@/services/resume";
+import { draftEmail } from "@/services/email";
+import { updateApplication } from "@/services/applications";
 
 interface Props {
   applicationId: string;
@@ -30,11 +33,9 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
   let cancelled = false;
   (async () => {
     try {
-      const res = await fetch("/api/resume");
-      const data = await res.json();
-      const defaultResume = (data.resumes ?? []).find((r: { isDefault: boolean }) => r.isDefault)
-        ?? (data.resumes ?? [])[0];
+      const data = await listResumes();
       if (cancelled) return;
+      const defaultResume = data.resumes.find((r) => r.isDefault) ?? data.resumes[0];
       if (defaultResume) {
         setResumeId(defaultResume.id);
       } else {
@@ -57,33 +58,16 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
     setBusy("resume");
     setError(null);
     try {
-      const tailorRes = await fetch("/api/resume/tailor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId, job }),
-      });
-      const tailorData = await tailorRes.json();
-      if (!tailorRes.ok) throw new Error(tailorData.error);
-      setTailoredLatex(tailorData.tailoredLatex);
+      const { tailoredLatex } = await tailorResume(resumeId, job);
+      setTailoredLatex(tailoredLatex);
 
-      const compileRes = await fetch("/api/resume/compile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ latex: tailorData.tailoredLatex, outputName: `resume_${applicationId}` }),
-      });
-      const compileData = await compileRes.json();
-      if (!compileRes.ok) throw new Error(compileData.error);
-      setPdfUrl(`/api/resume/pdf?path=${encodeURIComponent(compileData.pdfPath)}`);
+      const { pdfPath } = await compileResume(tailoredLatex, `resume_${applicationId}`);
+      setPdfUrl(pdfUrlFor(pdfPath));
 
-      // Save tailored latex and pdf path to the application
-      await fetch(`/api/applications/${applicationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tailoredLatex: tailorData.tailoredLatex,
-          tailoredPdfPath: compileData.pdfPath,
-          status: "PENDING_REVIEW",
-        }),
+      await updateApplication(applicationId, {
+        tailoredLatex,
+        tailoredPdfPath: pdfPath,
+        status: "PENDING_REVIEW",
       });
     } catch (err) {
       setError((err as Error).message);
@@ -96,32 +80,26 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
     setBusy("email");
     setError(null);
     try {
-      const res = await fetch("/api/email/draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          job: {
-            role: job.role,
-            company: job.company,
-            hrEmail: job.hrEmail,
-            hrName: job.hrName,
-            skills: job.skills,
-            experience: job.experience,
-            source: job.source,
-            location: job.location,
-          },
-          resumeHighlights: "",
-        }),
+      const data = await draftEmail({
+        job: {
+          role: job.role,
+          company: job.company,
+          hrEmail: job.hrEmail,
+          hrName: job.hrName,
+          skills: job.skills,
+          experience: job.experience,
+          source: job.source,
+          location: job.location,
+        },
+        resumeHighlights: "",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
       setSubject(data.subject);
       setEmailBody(data.body);
 
-      await fetch(`/api/applications/${applicationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailSubject: data.subject, emailBody: data.body, emailTemplate: data.templateId }),
+      await updateApplication(applicationId, {
+        emailSubject: data.subject,
+        emailBody: data.body,
+        emailTemplate: data.templateId,
       });
     } catch (err) {
       setError((err as Error).message);
@@ -131,11 +109,11 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
   }
 
   async function handleSaveEmail() {
-    await fetch(`/api/applications/${applicationId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emailSubject: subject, emailBody }),
-    });
+    try {
+      await updateApplication(applicationId, { emailSubject: subject, emailBody });
+    } catch (err) {
+      setError((err as Error).message);
+    }
   }
 
   return (

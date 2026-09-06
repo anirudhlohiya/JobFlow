@@ -44,6 +44,7 @@ model Application {
   resume          Resume?  @relation(fields: [resumeId], references: [id])
   tailoredLatex   String?
   tailoredPdfPath String?
+  gmailDraftId    String?
   emailSubject    String?
   emailBody       String?
   emailTemplate   String?

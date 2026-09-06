@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink, CheckCircle2 } from "lucide-react";
 import { formatCountdown } from "@/lib/format";
+import { DRAFTS_URL, isGmailQueued } from "@/lib/status";
+import { getApplication, approveApplication, type ApplicationRecord } from "@/services/applications";
 import type { ExtractedJob } from "@/types";
 
 interface Props {
@@ -15,41 +17,39 @@ interface Props {
   onComplete: () => void;
 }
 
-type Application = {
-  emailSubject?: string;
-  emailBody?: string;
-  tailoredPdfPath?: string;
-  scheduledSendAt?: string | null;
-  status: string;
-};
+interface ApprovalResult {
+  draftUrl: string;
+  autoScheduled: boolean;
+  scheduledSendAt: string | null;
+}
 
 export function ApproveStep({ applicationId, job, onBack, onComplete }: Props) {
-  const [app, setApp] = useState<Application | null>(null);
+  const [app, setApp] = useState<ApplicationRecord | null>(null);
+  const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ApprovalResult | null>(null);
 
   useEffect(() => {
-    fetch(`/api/applications/${applicationId}`)
-      .then((r) => r.json())
-      .then((d) => setApp(d.application))
-      .catch(() => setError("Failed to load application."));
+    getApplication(applicationId)
+      .then(({ application }) => setApp(application))
+      .catch((err) => setError((err as Error).message))
+      .finally(() => setLoading(false));
   }, [applicationId]);
 
   async function handleApprove() {
     setApproving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/applications/${applicationId}/approve`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      const updated = data.application;
-      setApp(updated);
-      alert(
-        `Application queued!\n\nIt will send at: ${new Date(updated.scheduledSendAt).toLocaleString()}\n\nCheck the dashboard to track it.`
-      );
-      onComplete();
+      const res = await approveApplication(applicationId);
+      setApp(res.application);
+      if ("draft" in res && res.draft) {
+        setResult({
+          draftUrl: res.draft.draftUrl,
+          autoScheduled: res.draft.autoScheduled,
+          scheduledSendAt: res.draft.scheduledSendAt,
+        });
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -57,11 +57,56 @@ export function ApproveStep({ applicationId, job, onBack, onComplete }: Props) {
     }
   }
 
+  if (loading) {
+    return <p className="text-sm text-mute py-10">Loading application…</p>;
+  }
+
+  const alreadyQueued = app ? isGmailQueued(app.status) : false;
+
   return (
     <div className="flex flex-col gap-6">
       {error && (
         <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
           {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="rounded-md bg-cyan-soft border border-cyan/30 px-4 py-3 text-sm text-[#007970] flex flex-col gap-1">
+          <p className="font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" /> Queued in your Gmail as a real draft.
+          </p>
+          {result.autoScheduled && result.scheduledSendAt ? (
+            <p>
+              Auto-send scheduled for{" "}
+              <strong>{new Date(result.scheduledSendAt).toLocaleString()}</strong> (
+              {formatCountdown(new Date(result.scheduledSendAt))} from now).
+            </p>
+          ) : (
+            <p>Emails stay as drafts until Gmail sends them. You can review and send anytime.</p>
+          )}
+          <a
+            href={result.draftUrl || DRAFTS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 font-medium underline mt-1"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> Open Gmail drafts
+          </a>
+        </div>
+      )}
+
+      {alreadyQueued && !result && (
+        <div className="rounded-md bg-link-soft border border-link/20 px-4 py-3 text-sm text-link-deep">
+          This application is already queued in Gmail.{" "}
+          <a
+            href={DRAFTS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 underline"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> Open Gmail drafts
+          </a>
         </div>
       )}
 
@@ -133,10 +178,10 @@ export function ApproveStep({ applicationId, job, onBack, onComplete }: Props) {
           Back
         </Button>
         <div className="flex items-center gap-4">
-          {app?.status === "QUEUED" && app.scheduledSendAt ? (
-            <div className="text-sm text-mute">
-              Queued — sends in <span className="text-ink font-medium">{formatCountdown(new Date(app.scheduledSendAt))}</span>
-            </div>
+          {alreadyQueued || result ? (
+            <Button onClick={onComplete} className="rounded-md h-10 px-5 bg-ink text-white hover:bg-ink/90">
+              Done
+            </Button>
           ) : (
             <Button
               onClick={handleApprove}
@@ -148,7 +193,7 @@ export function ApproveStep({ applicationId, job, onBack, onComplete }: Props) {
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Queuing…
                 </>
               ) : (
-                "Approve & Queue for Send"
+                "Approve & Queue in Gmail"
               )}
             </Button>
           )}

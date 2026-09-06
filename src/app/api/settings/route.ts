@@ -26,7 +26,12 @@ export async function GET() {
 
   const payload: Record<string, unknown> & {
     provider: { configured: boolean };
-    gmail: { connected: boolean; email?: string };
+    gmail: {
+      connected: boolean;
+      email?: string;
+      redirectUri?: string | null;
+      hasCredentials?: boolean;
+    };
     user: Record<string, unknown>;
   } = {
     provider: { configured: false },
@@ -45,6 +50,11 @@ export async function GET() {
 
   const gmailToken = await getOAuthToken();
   if (gmailToken) payload.gmail.connected = true;
+
+  payload.gmail.redirectUri = process.env.GOOGLE_REDIRECT_URI ?? null;
+  payload.gmail.hasCredentials = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+  );
 
   const email = await prisma.setting.findUnique({ where: { key: "google_connected_email" } });
   if (email) payload.gmail.email = email.value;
