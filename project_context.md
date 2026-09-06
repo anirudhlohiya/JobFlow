@@ -53,6 +53,8 @@ npm run doctor       # env readiness check (scripts/doctor.js)
 
 Dev server is usually left running detached (`Start-Process`). Scheduler logs `[scheduler] Started — drafting follow-ups into Gmail when due.` on boot.
 
+**Sandbox/startup gotcha (2026-09-06):** `next dev` (Turbopack) can fail with `Error: listen UNKNOWN: unknown error 0.0.0.0:3000` (UV_UNKNOWN -4094) when spawned via `Start-Process npm.cmd ... -RedirectStandardOutput/Error` — the redirect handles seem to break the child's socket bind; the app is fine. Reliable launch: `Start-Process cmd.exe -ArgumentList '/c "npx next start -p 3000 > <temp>\prod-out.log 2> <temp>\prod-err.log"' -WorkingDirectory ... -WindowStyle Hidden` (production server also prints the scheduler line; `next build` must precede it). A port left in a bad state after `taskkill /F` clears within a minute or two — or grab a fresh port.
+
 **Windows/PowerShell 5.1 notes:** `Invoke-WebRequest -Form` does not exist (use `curl.exe` or Node for multipart); some PowerShell test scripts failed for that reason only. Em-dash prints as `�??` in the console (encoding only, not data).
 
 ---
