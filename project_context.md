@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Sun Sep 06 2026. **Latest commit:** `666f699` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Sun Sep 06 2026. **Latest commit:** `f97ca00` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,7 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `f97ca00` — fix: fail-closed scheduler, encrypt scheduler token, real AI error messages (Apps Script now rejects requests when no token is configured and fires exactly one send per trigger instead of deleting all triggers; `gmail_scheduler_token` encrypted at rest like other secrets; all AI libs now surface the real provider error — e.g. free-tier quota — instead of a generic message, via new `src/lib/ai/errors.ts`)
   - Session 2 commits (Gmail-queue architecture + MVVM refactor + error surface work):
     - `a4222db` — feat: queue emails as real Gmail drafts, surface OAuth errors, MVVM refactor (approve → Gmail draft, scheduler no longer auto-sends, services + ViewModels, error surfaces, schema `gmailDraftId`, deleted `send.ts` + test data)
   - `666f699` — fix: PDF/send pipeline, vision extraction, profile save, tz math (previous HEAD)
@@ -64,7 +65,7 @@ Dev server is usually left running detached (`Start-Process`). Scheduler logs `[
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` set. `GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback` — **must be registered exactly as an Authorized redirect URI in Google Cloud Console** (currently NOT registered → `redirect_uri_mismatch`, see §10).
 - `TECTONIC_PATH=C:\tools\Tectonic\tectonic.exe` (installed v0.17.0, NOT on PATH).
 - `config/user.config.yaml` (gitignored): if missing, falls back to `config/user.config.example.yaml` (placeholder profile, 9–11 IST send window). DB `Setting` rows (`user_name`, `user_email`, …) **overlay** config via `src/lib/profile.ts` `getUserProfile()` (DB wins) — this is what makes Settings → Save Profile work.
-- Settings `Setting`-table keys: AI keys (`llm_provider`, `llm_model`, `llm_key_*` — encrypted at rest), Gmail tokens (encrypted), profile (`user_*`), and now **`gmail_scheduler_url` + `gmail_scheduler_token`** (Apps Script web app config).
+- Settings `Setting`-table keys: AI keys (`llm_provider`, `llm_model`, `llm_key_*` — encrypted at rest), Gmail tokens (encrypted), profile (`user_*`), and now **`gmail_scheduler_url` + `gmail_scheduler_token`** (Apps Script web app config; token is encrypted at rest like other secrets).
 
 ---
 
