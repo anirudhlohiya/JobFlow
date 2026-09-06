@@ -1,4 +1,5 @@
 import { runText } from "./providers";
+import { toFriendlyAiError } from "./errors";
 import type { ExtractedJob, UserConfig } from "@/types";
 
 export interface Template {
@@ -181,7 +182,7 @@ export async function draftEmail(context: DraftContext): Promise<{ subject: stri
     return parseDraftOutput(output, templateId);
   } catch (error) {
     console.error("[draft] Failed:", error);
-    throw new Error("Failed to draft email. Check your AI provider configuration.");
+    throw toFriendlyAiError(error);
   }
 }
 

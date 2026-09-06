@@ -1,4 +1,5 @@
 import { runText } from "./providers";
+import { toFriendlyAiError } from "./errors";
 import type { ExtractedJob } from "@/types";
 
 const TAILOR_SYSTEM = `You are a professional resume writer specializing in LaTeX resumes.
@@ -38,7 +39,7 @@ starting with \\documentclass and ending with \\end{document}. No markdown fence
     return cleanLatexOutput(result);
   } catch (error) {
     console.error("[tailor] Failed:", error);
-    throw new Error("Failed to tailor resume. Check your AI provider configuration.");
+    throw toFriendlyAiError(error);
   }
 }
 

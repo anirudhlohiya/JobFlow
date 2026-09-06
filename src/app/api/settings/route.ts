@@ -11,6 +11,7 @@ const SENSITIVE_KEYS = [
   "llm_key_gemini_api_key",
   "llm_key_groq_api_key",
   "google_refresh_token",
+  "gmail_scheduler_token",
 ];
 
 function maskValue(key: string, value: string): string {

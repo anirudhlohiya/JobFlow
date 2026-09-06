@@ -4,6 +4,7 @@ import { getOAuthClient } from "./auth";
 import { buildMimeMessage } from "./mime";
 import { prisma } from "@/lib/db";
 import { getNextSendTime } from "@/lib/schedule";
+import { decryptSecret } from "@/lib/crypto";
 
 export interface CreateDraftParams {
   to: string;
@@ -88,12 +89,18 @@ async function scheduleSendViaAppsScript(input: {
   body: string;
   attachment?: { filename: string; content: string };
 }): Promise<{ scheduled: boolean; when?: Date }> {
-  const url = (
-    await prisma.setting.findUnique({ where: { key: "gmail_scheduler_url" } })
-  )?.value;
-  const token = (
-    await prisma.setting.findUnique({ where: { key: "gmail_scheduler_token" } })
-  )?.value;
+  const urlSetting = await prisma.setting.findUnique({
+    where: { key: "gmail_scheduler_url" },
+  });
+  const tokenSetting = await prisma.setting.findUnique({
+    where: { key: "gmail_scheduler_token" },
+  });
+  const url = urlSetting?.value;
+  const token = tokenSetting
+    ? tokenSetting.isEncrypted
+      ? decryptSecret(tokenSetting.value)
+      : tokenSetting.value
+    : undefined;
   if (!url || !token) return { scheduled: false };
 
   const when = getNextSendTime();

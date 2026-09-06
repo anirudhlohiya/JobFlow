@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { runObjectGeneration } from "./providers";
+import { toFriendlyAiError, messageOf } from "./errors";
 import type { ExtractedJob } from "@/types";
 
 const extractionSchema = z.object({
@@ -57,7 +58,7 @@ export async function extractJobFromText(rawText: string): Promise<ExtractedJob>
     };
   } catch (error) {
     console.error("[extract] Failed:", error);
-    throw new Error("Failed to extract job details. Check your AI provider configuration.");
+    throw toFriendlyAiError(error);
   }
 }
 
@@ -88,6 +89,10 @@ export async function extractJobFromImage(
     };
   } catch (error) {
     console.error("[extract] Vision failed:", error);
-    throw new Error("Failed to extract from image. Check that your provider supports vision.");
+    throw new Error(
+      messageOf(error).includes("429") || messageOf(error).toLowerCase().includes("quota")
+        ? toFriendlyAiError(error).message
+        : "Failed to extract from image. Check that your provider supports vision."
+    );
   }
 }
