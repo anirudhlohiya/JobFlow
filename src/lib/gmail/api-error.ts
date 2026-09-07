@@ -1,6 +1,15 @@
-/** Turn raw Google Gmail API errors into messages the user can act on. */
+import { prisma } from "@/lib/db";
 
-export function prettifyGmailError(error: unknown): Error {
+const TOKEN_KEY = "google_refresh_token";
+const EMAIL_KEY = "google_connected_email";
+
+/**
+ * Turn raw Google Gmail API errors into messages the user can act on.
+ * For scope problems it also clears the stored connection so the app
+ * returns to "Not connected" and guides a fresh, full re-approval —
+ * otherwise a stale token will keep failing forever.
+ */
+export async function prettifyGmailError(error: unknown): Promise<Error> {
   const raw = error instanceof Error ? error.message : String(error);
 
   const isApiDisabled =
@@ -21,15 +30,25 @@ export function prettifyGmailError(error: unknown): Error {
     );
   }
 
-  if (/invalid_grant/i.test(raw)) {
+  if (/insufficient authentication scopes|insufficient permission|access_denied/i.test(raw)) {
+    await prisma.setting.deleteMany({
+      where: { key: { in: [TOKEN_KEY, EMAIL_KEY] } },
+    });
     return new Error(
-      "Google access expired or was revoked. Go to Settings → Disconnect Gmail, then connect again."
+      `The saved Google permission has expired or was issued without full access.\n\n` +
+        `1. The app has reset itself to "Not connected".\n` +
+        `2. In Settings click "Connect Gmail" and log in again.\n` +
+        `3. On the Google consent screen, make sure EVERY permission toggle is ON, then Continue.\n\n` +
+        `(Original error: ${raw})`
     );
   }
 
-  if (/insufficient permission|scope|access_denied/i.test(raw)) {
+  if (/invalid_grant/i.test(raw)) {
+    await prisma.setting.deleteMany({
+      where: { key: { in: [TOKEN_KEY, EMAIL_KEY] } },
+    });
     return new Error(
-      `No permission on this Google account. Open Settings → click "Connect Gmail" again and approve the requested scopes.\n\n(Original error: ${raw})`
+      "Google access expired or was revoked. The app reset itself to \"Not connected\" — click Connect Gmail and approve again."
     );
   }
 

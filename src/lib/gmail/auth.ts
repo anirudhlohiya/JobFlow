@@ -70,7 +70,7 @@ export async function handleOAuthCallback(code: string): Promise<string> {
 
     return email;
   } catch (error) {
-    throw prettifyGmailError(error);
+    throw await prettifyGmailError(error);
   }
 }
 

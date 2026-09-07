@@ -32,7 +32,7 @@ export async function deleteGmailDraft(draftId: string): Promise<void> {
     const gmail = google.gmail({ version: "v1", auth: oauth.client });
     await gmail.users.drafts.delete({ userId: "me", id: draftId });
   } catch (error) {
-    throw prettifyGmailError(error);
+    throw await prettifyGmailError(error);
   }
 }
 
@@ -70,7 +70,7 @@ export async function createGmailDraft(params: CreateDraftParams): Promise<Creat
       requestBody: { message: { raw } as never },
     });
   } catch (error) {
-    throw prettifyGmailError(error);
+    throw await prettifyGmailError(error);
   }
 
   const draftId = res.data.id ?? "";
