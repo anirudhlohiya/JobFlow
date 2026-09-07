@@ -59,6 +59,8 @@ export async function handleOAuthCallback(code: string): Promise<string> {
     throw new Error("No refresh token returned from Google. Disconnect and reconnect Gmail.");
   }
 
+  const granted = Array.isArray(tokens.scope) ? tokens.scope : String(tokens.scope ?? "").split(" ");
+
   // Get the connected email address
   try {
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
@@ -67,6 +69,10 @@ export async function handleOAuthCallback(code: string): Promise<string> {
 
     await upsertSetting(TOKEN_KEY, tokens.refresh_token, true);
     await upsertSetting(EMAIL_KEY, email, false);
+
+    console.log(
+      `[auth] Gmail connected: ${email} | granted scopes: ${granted.filter(Boolean).join(" ") || "(none)"}`
+    );
 
     return email;
   } catch (error) {
