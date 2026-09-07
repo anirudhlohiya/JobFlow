@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/db";
 import { encryptSecret, decryptSecret } from "@/lib/crypto";
+import { prettifyGmailError } from "./api-error";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
@@ -59,14 +60,18 @@ export async function handleOAuthCallback(code: string): Promise<string> {
   }
 
   // Get the connected email address
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-  const profile = await gmail.users.getProfile({ userId: "me" });
-  const email = profile.data.emailAddress ?? "unknown";
+  try {
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    const profile = await gmail.users.getProfile({ userId: "me" });
+    const email = profile.data.emailAddress ?? "unknown";
 
-  await upsertSetting(TOKEN_KEY, tokens.refresh_token, true);
-  await upsertSetting(EMAIL_KEY, email, false);
+    await upsertSetting(TOKEN_KEY, tokens.refresh_token, true);
+    await upsertSetting(EMAIL_KEY, email, false);
 
-  return email;
+    return email;
+  } catch (error) {
+    throw prettifyGmailError(error);
+  }
 }
 
 export async function getOAuthToken(): Promise<string | null> {

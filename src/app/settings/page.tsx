@@ -59,7 +59,7 @@ function SettingsContent() {
       {gmailQuery === "error" && (
         <div className="rounded-md bg-warning-soft border border-warning/30 px-4 py-3 text-sm text-warning-deep">
           <p className="font-medium mb-1">Gmail connection failed.</p>
-          {gmailErrorReason ? <p className="mb-2">Reason: {gmailErrorReason}</p> : null}
+          {gmailErrorReason ? <p className="mb-2 whitespace-pre-line break-words text-[13px]">Reason: {gmailErrorReason}</p> : null}
           <GmailSetupGuide redirectUri={vm.settings?.gmail?.redirectUri ?? null} hasCredentials={vm.settings?.gmail?.hasCredentials ?? false} />
         </div>
       )}

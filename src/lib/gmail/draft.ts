@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import fs from "fs";
 import { getOAuthClient } from "./auth";
+import { prettifyGmailError } from "./api-error";
 import { buildMimeMessage } from "./mime";
 import { prisma } from "@/lib/db";
 import { getNextSendTime } from "@/lib/schedule";
@@ -27,8 +28,12 @@ const DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts";
 export async function deleteGmailDraft(draftId: string): Promise<void> {
   const oauth = await getOAuthClient();
   if (!oauth) throw new Error("Gmail not connected");
-  const gmail = google.gmail({ version: "v1", auth: oauth.client });
-  await gmail.users.drafts.delete({ userId: "me", id: draftId });
+  try {
+    const gmail = google.gmail({ version: "v1", auth: oauth.client });
+    await gmail.users.drafts.delete({ userId: "me", id: draftId });
+  } catch (error) {
+    throw prettifyGmailError(error);
+  }
 }
 
 /**
@@ -58,10 +63,15 @@ export async function createGmailDraft(params: CreateDraftParams): Promise<Creat
     threadId: params.threadId,
   });
 
-  const res = await gmail.users.drafts.create({
-    userId: "me",
-    requestBody: { message: { raw } as never },
-  });
+  let res;
+  try {
+    res = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: { message: { raw } as never },
+    });
+  } catch (error) {
+    throw prettifyGmailError(error);
+  }
 
   const draftId = res.data.id ?? "";
 
