@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Sun Sep 06 2026. **Latest commit:** `28f4ede` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Mon Sep 07 2026. **Latest commit:** `7b4be3f` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,7 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `7b4be3f` — fix: actionable Gmail API-not-enabled error, surfaced with one-click enable link (new `src/lib/gmail/api-error.ts` `prettifyGmailError`, wired into connect + draft/delete; Settings error box renders the multi-line help)
   - `28f4ede` — feat: mobile-friendly UI (hamburger drawer nav replaces fixed sidebar below `lg`, tables scroll horizontally on phones, detail/wizard action bars stack, responsive PDF iframes + settings rows)
   - `58e83fd` — docs: replace boilerplate README with real JobFlow setup + run guide
   - `a7904a6` — docs: stamp project_context.md commit history (tracking HEAD)
@@ -157,14 +158,14 @@ Pages: `/` (dashboard; shows Gmail-disconnected banner, "Gmail Drafts" card with
 - **Test data cleared** (user requested): `Application`=0, `EmailLog`=0. `Resume`=1 (`main.tex`, 7,235 chars, `isDefault`; row `cmtot9a8r0000g0wb2fdwj903`). `Setting`=4 profile rows.
 - Verified live: `/api/settings` returns `gmail.connected=false`, `gmail.redirectUri=http://localhost:3000/api/auth/google/callback`, `gmail.hasCredentials=true`; a smoke application `POST` → `approve` returns **400 `"Gmail is not connected yet. Open Settings → Connections …"`** (correct gate).
 - **User blockers (not code bugs):**
-  1. Google sign-in fails with **`redirect_uri_mismatch`** (`error_logs.txt` at repo root, gitignored) — the Owner must register `http://localhost:3000/api/auth/google/callback` as an Authorized redirect URI in Google Cloud Console for their OAuth client. Settings now shows the exact URI + steps.
+  1. Google sign-in now passes the redirect-URI check (that blocker is **resolved**). The current `error_logs.txt` error is **`Gmail API has not been used in project 71286466599 before or it is disabled`** — the Owner must **enable the Gmail API** for project **71286466599** at https://console.developers.google.com/apis/api/gmail.googleapis.com/overview?project=71286466599, wait ~2 min, then re-run **Connect Gmail**. The app auto-detects this error and surfaces that exact link in Settings (`src/lib/gmail/api-error.ts`, `prettifyGmailError`) — so it should be a copy-paste to resolve.
   2. **Apps Script optional auto-send** requires one-time deploy of `scripts/gmail-scheduler/Code.gs` + pasting the `/exec` URL and token into Settings. Until then, approvals create drafts that stay in Gmail (still correct: nothing is lost).
 
 ---
 
 ## 11. Known issues / low-priority leftovers
 
-1. **Gmail not actually connected** on this machine (see §10 blocker 1) — draft creation can't be live-tested until the redirect URI is registered. The gate (400 + message) and draft code path are otherwise exercised.
+1. **Gmail not actually connected** on this machine: `redirect_uri_mismatch` is fixed; the remaining blocker is **enabling the Gmail API** in project 71286466599 (see §10 blocker 1). Draft creation can't be live-tested until the API is enabled + Gmail re-connected. The gate (400 + message) and draft code path are otherwise exercised.
 2. **Apps Script scheduler not deployed** — `scheduleSendViaAppsScript` silently returns `scheduled:false` when unconfigured (by design). No local test possible until user deploys.
 3. Vision extraction still not live-tested end-to-end (needs a screenshot). Code path is fixed.
 4. Scheduler follow-up drafting only runs while the dev/machine is on (by design: follow-ups also rely on the app being alive); the master draft flow is fully Gmail-side and independent.
