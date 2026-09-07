@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Sun Sep 06 2026. **Latest commit:** `87db197` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Sun Sep 06 2026. **Latest commit:** `28f4ede` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,9 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `28f4ede` — feat: mobile-friendly UI (hamburger drawer nav replaces fixed sidebar below `lg`, tables scroll horizontally on phones, detail/wizard action bars stack, responsive PDF iframes + settings rows)
+  - `58e83fd` — docs: replace boilerplate README with real JobFlow setup + run guide
+  - `a7904a6` — docs: stamp project_context.md commit history (tracking HEAD)
   - `87db197` — docs: note reliable server launch workaround (listen UNKNOWN on Start-Process redirect)
   - `ab14e38` — docs: update project context (scheduler hardening + AI error surfacing)
   - `f97ca00` — fix: fail-closed scheduler, encrypt scheduler token, real AI error messages (Apps Script now rejects requests when no token is configured and fires exactly one send per trigger instead of deleting all triggers; `gmail_scheduler_token` encrypted at rest like other secrets; all AI libs now surface the real provider error — e.g. free-tier quota — instead of a generic message, via new `src/lib/ai/errors.ts`)
