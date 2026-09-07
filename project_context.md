@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Mon Sep 07 2026. **Latest commit:** `7b4be3f` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Mon Sep 07 2026. **Latest commit:** `f6e8c39` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,7 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `f6e8c39` — fix: auto-reset Gmail on stale/expired scopes (`prettifyGmailError` is async; on `insufficient authentication scopes` / `invalid_grant` it deletes the saved refresh token + email and shows the "re-approve all scopes" steps) — resolves the current `error_logs.txt` scope error
   - `7b4be3f` — fix: actionable Gmail API-not-enabled error, surfaced with one-click enable link (new `src/lib/gmail/api-error.ts` `prettifyGmailError`, wired into connect + draft/delete; Settings error box renders the multi-line help)
   - `28f4ede` — feat: mobile-friendly UI (hamburger drawer nav replaces fixed sidebar below `lg`, tables scroll horizontally on phones, detail/wizard action bars stack, responsive PDF iframes + settings rows)
   - `58e83fd` — docs: replace boilerplate README with real JobFlow setup + run guide
@@ -158,7 +159,7 @@ Pages: `/` (dashboard; shows Gmail-disconnected banner, "Gmail Drafts" card with
 - **Test data cleared** (user requested): `Application`=0, `EmailLog`=0. `Resume`=1 (`main.tex`, 7,235 chars, `isDefault`; row `cmtot9a8r0000g0wb2fdwj903`). `Setting`=4 profile rows.
 - Verified live: `/api/settings` returns `gmail.connected=false`, `gmail.redirectUri=http://localhost:3000/api/auth/google/callback`, `gmail.hasCredentials=true`; a smoke application `POST` → `approve` returns **400 `"Gmail is not connected yet. Open Settings → Connections …"`** (correct gate).
 - **User blockers (not code bugs):**
-  1. Google sign-in now passes the redirect-URI check (that blocker is **resolved**). The current `error_logs.txt` error is **`Gmail API has not been used in project 71286466599 before or it is disabled`** — the Owner must **enable the Gmail API** for project **71286466599** at https://console.developers.google.com/apis/api/gmail.googleapis.com/overview?project=71286466599, wait ~2 min, then re-run **Connect Gmail**. The app auto-detects this error and surfaces that exact link in Settings (`src/lib/gmail/api-error.ts`, `prettifyGmailError`) — so it should be a copy-paste to resolve.
+  1. Current `error_logs.txt` error: **`Request had insufficient authentication scopes`** — a stale Google permission on the OAuth client (issued before the Gmail API was enabled, or in "testing" mode lapsed after 7 days). The app (`prettifyGmailError`) now auto-detects this and `invalid_grant`, deletes the stale refresh token + email, resets to "Not connected", and prompts a fresh full Google re-approval in Settings. **To resolve:** Settings → Connect Gmail → approve with every permission toggle ON. (Connection is currently stalescoped; API still reports the old email + masked token.)
   2. **Apps Script optional auto-send** requires one-time deploy of `scripts/gmail-scheduler/Code.gs` + pasting the `/exec` URL and token into Settings. Until then, approvals create drafts that stay in Gmail (still correct: nothing is lost).
 
 ---
