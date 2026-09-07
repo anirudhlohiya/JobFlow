@@ -173,11 +173,11 @@ export function ApproveStep({ applicationId, job, onBack, onComplete }: Props) {
         </Card>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="rounded-md h-10 text-ink">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="rounded-md h-10 text-ink sm:w-auto">
           Back
         </Button>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {alreadyQueued || result ? (
             <Button onClick={onComplete} className="rounded-md h-10 px-5 bg-ink text-white hover:bg-ink/90">
               Done

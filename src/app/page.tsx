@@ -163,8 +163,8 @@ export default function DashboardPage() {
         <p className="font-mono text-[12px] uppercase tracking-wide text-mute mb-4">
           Recent Applications
         </p>
-        <div className="border border-hairline rounded-[12px] bg-white overflow-hidden">
-          <table className="w-full text-left">
+        <div className="border border-hairline rounded-[12px] bg-white overflow-x-auto">
+          <table className="w-full text-left min-w-[640px]">
             <thead>
               <tr className="border-b border-hairline">
                 <Th>Role</Th>

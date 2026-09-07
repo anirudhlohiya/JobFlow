@@ -144,10 +144,10 @@ function SettingsContent() {
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {vm.gmailConnected ? (
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#007970]" />
+                <CheckCircle2 className="w-5 h-5 text-[#007970] shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-ink">Gmail Connected</p>
                   <p className="text-[12px] text-mute">{vm.settings?.gmail?.email || "—"}</p>
@@ -155,14 +155,14 @@ function SettingsContent() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <XCircle className="w-5 h-5 text-warning" />
+                <XCircle className="w-5 h-5 text-warning shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-ink">Not connected</p>
                   <p className="text-[12px] text-mute">Link your Gmail so approved applications can be queued as drafts.</p>
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0">
               {vm.gmailConnected ? (
                 <Button variant="ghost" className="rounded-md h-9 text-destructive" onClick={vm.disconnectGmail}>
                   Disconnect
@@ -232,7 +232,7 @@ function SettingsContent() {
               <CheckCircle2 className="w-5 h-5 text-[#007970] shrink-0" />
             </div>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <label className="flex items-center gap-2 rounded-md border border-hairline bg-white px-4 py-2.5 cursor-pointer hover:border-body">
               <Upload className="w-4 h-4 text-mute" />
               <span className="text-sm text-body">{vm.uploading ? "Uploading…" : vm.defaultResume ? "Replace .tex file" : "Choose .tex file"}</span>

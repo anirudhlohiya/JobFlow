@@ -153,7 +153,7 @@ export function IngestionStep({ onComplete }: IngestionStepProps) {
               </div>
 
               {images.length > 0 && (
-                <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                   {images.map((img, i) => (
                     <div key={i} className="relative border border-hairline rounded-[12px] overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}

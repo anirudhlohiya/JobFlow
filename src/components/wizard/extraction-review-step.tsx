@@ -31,7 +31,7 @@ export function ExtractionReviewStep({ job: initialJob, onBack, onComplete }: Pr
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-mute">Extraction confidence:</span>
         <Badge className={`${confidenceBadge} border rounded-full font-medium`}>
           {job.confidence ?? "medium"}
@@ -144,8 +144,8 @@ export function ExtractionReviewStep({ job: initialJob, onBack, onComplete }: Pr
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="rounded-md h-10 text-ink">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+        <Button variant="ghost" onClick={onBack} className="rounded-md h-10 text-ink sm:w-auto">
           Back
         </Button>
         <Button

@@ -23,7 +23,7 @@ export default function NewApplicationPage() {
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {WIZARD_STEPS.map((label, i) => (
           <div key={label} className="flex items-center gap-3">
             <div className="flex items-center gap-2">

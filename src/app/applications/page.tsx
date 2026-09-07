@@ -59,8 +59,8 @@ export default function ApplicationsPage() {
         ))}
       </div>
 
-      <div className="border border-hairline rounded-[12px] bg-white overflow-hidden">
-        <table className="w-full text-left">
+      <div className="border border-hairline rounded-[12px] bg-white overflow-x-auto">
+        <table className="w-full text-left min-w-[720px]">
           <thead>
             <tr className="border-b border-hairline">
               <Th>Role</Th>

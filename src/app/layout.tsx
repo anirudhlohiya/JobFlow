@@ -25,10 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex">
+      <body className="min-h-full flex flex-col lg:flex-row">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 px-6 lg:px-10 py-8 max-w-[1200px] w-full mx-auto">
+          <main className="flex-1 px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-[1200px] w-full mx-auto">
             {children}
           </main>
         </div>

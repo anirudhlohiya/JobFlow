@@ -124,7 +124,7 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Button
           onClick={handleGenerateResume}
           disabled={!resumeId || busy !== ""}
@@ -165,7 +165,7 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
 
         <TabsContent value="resume">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-[20px] font-semibold tracking-[-0.4px]">
                 Tailored Resume
               </CardTitle>
@@ -184,7 +184,7 @@ export function ResumeEmailStep({ applicationId, job, onBack, onComplete }: Prop
               {pdfUrl ? (
                 <iframe
                   src={pdfUrl}
-                  className="w-full h-[600px] border border-hairline rounded-[12px] bg-white"
+                  className="w-full h-[70vh] min-h-[420px] border border-hairline rounded-[12px] bg-white"
                   title="Resume PDF preview"
                 />
               ) : (

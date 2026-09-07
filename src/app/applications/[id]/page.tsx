@@ -41,9 +41,9 @@ export default function ApplicationDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.64px] text-ink">
               {app.role}
             </h1>
@@ -56,7 +56,7 @@ export default function ApplicationDetailPage({
             {app.hrEmail ? ` · ${app.hrEmail}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {vm.isQueued ? (
             <Button onClick={vm.cancel} disabled={vm.busy !== null} className="rounded-md h-9 bg-white text-ink border border-hairline hover:bg-hairline-soft">
               {vm.busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Remove from Queue"}
@@ -113,7 +113,7 @@ export default function ApplicationDetailPage({
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-transparent border border-hairline rounded-full">
+        <TabsList className="bg-transparent border border-hairline rounded-full flex-wrap max-w-full w-fit">
           <TabsTrigger value="email" className="rounded-full data-[state=active]:bg-ink data-[state=active]:text-white">
             Email
           </TabsTrigger>
@@ -146,7 +146,7 @@ export default function ApplicationDetailPage({
           <Card>
             <CardContent className="p-6">
               {vm.pdfUrl ? (
-                <iframe src={vm.pdfUrl} className="w-full h-[700px] border border-hairline rounded-[12px] bg-white" title="Resume PDF" />
+                <iframe src={vm.pdfUrl} className="w-full h-[70vh] min-h-[420px] border border-hairline rounded-[12px] bg-white" title="Resume PDF" />
               ) : (
                 <p className="text-sm text-mute">No tailored resume compiled yet.</p>
               )}
@@ -181,7 +181,7 @@ export default function ApplicationDetailPage({
               ) : (
                 <div className="flex flex-col gap-2">
                   {app.emailLogs.map((log) => (
-                    <div key={log.id} className="flex items-center justify-between border border-hairline rounded-md px-4 py-2.5 text-sm">
+                    <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-hairline rounded-md px-4 py-2.5 text-sm">
                       <span className="font-mono text-body">{log.type}</span>
                       <Badge className={`${getStatusBadgeClass(log.type === "FOLLOW_UP_1" || log.type === "FOLLOW_UP_2" ? "SENT" : isGmailQueued(log.status) ? "QUEUED_IN_GMAIL" : log.status === "FAILED" ? "PENDING_REVIEW" : "SENT")} border rounded-full font-medium`}>
                         {log.status}
