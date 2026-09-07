@@ -9,7 +9,10 @@ const EMAIL_KEY = "google_connected_email";
  * returns to "Not connected" and guides a fresh, full re-approval —
  * otherwise a stale token will keep failing forever.
  */
-export async function prettifyGmailError(error: unknown): Promise<Error> {
+export async function prettifyGmailError(
+  error: unknown,
+  grantedScopes?: string[] | null
+): Promise<Error> {
   const raw = error instanceof Error ? error.message : String(error);
 
   const isApiDisabled =
@@ -34,11 +37,27 @@ export async function prettifyGmailError(error: unknown): Promise<Error> {
     await prisma.setting.deleteMany({
       where: { key: { in: [TOKEN_KEY, EMAIL_KEY] } },
     });
+
+    if (/access_denied/i.test(raw)) {
+      return new Error(
+        `Google access was denied. The app reset itself to "Not connected" — click Connect Gmail and approve the requested permissions.\n\n(Original error: ${raw})`
+      );
+    }
+
+    const grantedList = (grantedScopes ?? []).filter(Boolean);
+    const scopesNote = grantedList.length
+      ? `Scopes Google returned: ${grantedList.join(" ")}`
+      : "Scopes Google returned: none — the OAuth consent screen in Google Cloud Console has not been configured with the Gmail scopes.";
+
     return new Error(
-      `The saved Google permission has expired or was issued without full access.\n\n` +
-        `1. The app has reset itself to "Not connected".\n` +
-        `2. In Settings click "Connect Gmail" and log in again.\n` +
-        `3. On the Google consent screen, make sure EVERY permission toggle is ON, then Continue.\n\n` +
+      `Google issued Gmail access without the required permission scopes.\n\n` +
+        `This is a Google Cloud Console configuration issue (not an app bug). Fix it there:\n` +
+        `1. Open https://console.cloud.google.com/apis/credentials → OAuth consent screen → Data Access.\n` +
+        `2. Click ADD OR REMOVE SCOPES and add:\n` +
+        `   https://www.googleapis.com/auth/gmail.send\n` +
+        `   https://www.googleapis.com/auth/gmail.readonly\n` +
+        `3. Click UPDATE, then re-run Connect Gmail and approve every toggle.\n\n` +
+        `${scopesNote}\n\n` +
         `(Original error: ${raw})`
     );
   }
