@@ -60,6 +60,9 @@ export async function handleOAuthCallback(code: string): Promise<string> {
   }
 
   const granted = Array.isArray(tokens.scope) ? tokens.scope : String(tokens.scope ?? "").split(" ");
+  console.log(
+    `[auth] callback OK | issued scopes: ${granted.filter(Boolean).join(" ").slice(0, 500) || "(none)"}`
+  );
 
   // Get the connected email address
   try {
