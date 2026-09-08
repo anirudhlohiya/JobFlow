@@ -1,7 +1,7 @@
 # JobFlow — Project Context (give this file to any AI to pick up full state)
 
 > Handoff document. Covers everything about the JobFlow project as of the last session so a fresh AI session (or another model) can continue without re-discovering the codebase.
-> **Last updated:** Mon Sep 07 2026. **Latest commit:** `f6e8c39` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
+> **Last updated:** Mon Sep 07 2026. **Latest commit:** `cb60fa6` on `main`, pushed to GitHub (this session's changes are committed in the commits listed in §2).
 
 ---
 
@@ -27,6 +27,11 @@ Phase 1 (this core) is **code-complete**. The Gmail side needs two one-time, use
 - **Remote:** `https://github.com/anirudhlohiya/JobFlow.git` (user `anirudhlohiya`, email `anirudhlohiya999@gmail.com`).
 - **Branch:** `main`. Package name in `package.json` is `jobflow`.
 - **Commit history (newest first):**
+  - `cb60fa6` — fix: add `gmail.compose` scope — **root-cause fix for the recurring "insufficient authentication scopes"** (Google's `users.drafts.create`/`delete` require `gmail.compose`, `gmail.modify`, or `mail.google.com`, NOT `gmail.send`; verified via discovery + live test `DRAFTS.CREATE OK / DRAFTS.DELETE OK 204`. Also updated `docs/04-ARCHITECTURE.md` + console help text)
+  - `b1ec164` — fix: log issued scopes immediately at OAuth callback (diagnostic)
+  - `64d2803` — fix: show granted Gmail scopes vs Cloud Console fix steps on scope errors
+  - `6fee71f` — fix: log granted Gmail scopes at connect to diagnose insufficient-scope errors
+  - `44a2748` — docs: project context — record scope/stale-token blocker + auto-reset
   - `f6e8c39` — fix: auto-reset Gmail on stale/expired scopes (`prettifyGmailError` is async; on `insufficient authentication scopes` / `invalid_grant` it deletes the saved refresh token + email and shows the "re-approve all scopes" steps) — resolves the current `error_logs.txt` scope error
   - `7b4be3f` — fix: actionable Gmail API-not-enabled error, surfaced with one-click enable link (new `src/lib/gmail/api-error.ts` `prettifyGmailError`, wired into connect + draft/delete; Settings error box renders the multi-line help)
   - `28f4ede` — feat: mobile-friendly UI (hamburger drawer nav replaces fixed sidebar below `lg`, tables scroll horizontally on phones, detail/wizard action bars stack, responsive PDF iframes + settings rows)
@@ -159,14 +164,14 @@ Pages: `/` (dashboard; shows Gmail-disconnected banner, "Gmail Drafts" card with
 - **Test data cleared** (user requested): `Application`=0, `EmailLog`=0. `Resume`=1 (`main.tex`, 7,235 chars, `isDefault`; row `cmtot9a8r0000g0wb2fdwj903`). `Setting`=4 profile rows.
 - Verified live: `/api/settings` returns `gmail.connected=false`, `gmail.redirectUri=http://localhost:3000/api/auth/google/callback`, `gmail.hasCredentials=true`; a smoke application `POST` → `approve` returns **400 `"Gmail is not connected yet. Open Settings → Connections …"`** (correct gate).
 - **User blockers (not code bugs):**
-  1. Current `error_logs.txt` error: **`Request had insufficient authentication scopes`** — a stale Google permission on the OAuth client (issued before the Gmail API was enabled, or in "testing" mode lapsed after 7 days). The app (`prettifyGmailError`) now auto-detects this and `invalid_grant`, deletes the stale refresh token + email, resets to "Not connected", and prompts a fresh full Google re-approval in Settings. **To resolve:** Settings → Connect Gmail → approve with every permission toggle ON. (Connection is currently stalescoped; API still reports the old email + masked token.)
+  1. **RESOLVED. Gmail connection + draft path fully working.** Root cause was OAuth **scopes**: Google's `users.drafts.create`/`delete`/`send` do **not** accept `gmail.send` — they require `gmail.compose`, `gmail.modify`, or `mail.google.com` (verified via Google reference docs). Fixed in `cb60fa6` by adding `gmail.compose` to the requested scopes. Live-verified: connect logs show `issued scopes: gmail.compose gmail.readonly gmail.send`; a probe creating+deleting a real Gmail draft returned `DRAFTS.CREATE OK` / `DRAFTS.DELETE OK 204`. The `error_logs.txt` entry is a **stale paste** (old error text from before the fix) — no code writes that file.
   2. **Apps Script optional auto-send** requires one-time deploy of `scripts/gmail-scheduler/Code.gs` + pasting the `/exec` URL and token into Settings. Until then, approvals create drafts that stay in Gmail (still correct: nothing is lost).
 
 ---
 
 ## 11. Known issues / low-priority leftovers
 
-1. **Gmail not actually connected** on this machine: `redirect_uri_mismatch` is fixed; the remaining blocker is **enabling the Gmail API** in project 71286466599 (see §10 blocker 1). Draft creation can't be live-tested until the API is enabled + Gmail re-connected. The gate (400 + message) and draft code path are otherwise exercised.
+1. **Gmail fully connected + draft path verified working** (fixed via `cb60fa6` — scope bug, not user config; see §10 blocker 1 for verification details).
 2. **Apps Script scheduler not deployed** — `scheduleSendViaAppsScript` silently returns `scheduled:false` when unconfigured (by design). No local test possible until user deploys.
 3. Vision extraction still not live-tested end-to-end (needs a screenshot). Code path is fixed.
 4. Scheduler follow-up drafting only runs while the dev/machine is on (by design: follow-ups also rely on the app being alive); the master draft flow is fully Gmail-side and independent.
