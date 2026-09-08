@@ -33,11 +33,11 @@
  * property `jobflow_token` (Script Properties) to the same value. Leave BOTH
  * empty and the script rejects all requests (fail-closed).
  */
-const CONFIG_TOKEN = "";
+var CONFIG_TOKEN = "";
 
-const PROP_PREFIX = "jobflow_send_";
+var PROP_PREFIX = "jobflow_send_";
 
-function configuredToken(): string {
+function configuredToken() {
   return (
     CONFIG_TOKEN ||
     PropertiesService.getScriptProperties().getProperty("jobflow_token") ||
@@ -45,11 +45,11 @@ function configuredToken(): string {
   );
 }
 
-function requireValidToken(payloadToken: string): void {
-  const token = configuredToken();
+function requireValidToken(payloadToken) {
+  var token = configuredToken();
   if (!token) {
     throw new Error(
-      "Scheduler token is not configured. Set CONFIG_TOKEN (or script property jobflow_token) to a strong value and enter the SAME value in JobFlow Settings → Gmail Scheduler."
+      "Scheduler token is not configured. Set CONFIG_TOKEN (or script property jobflow_token) to a strong value and enter the SAME value in JobFlow Settings -> Gmail Scheduler."
     );
   }
   if (payloadToken !== token) {
@@ -57,16 +57,17 @@ function requireValidToken(payloadToken: string): void {
   }
 }
 
-function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
+function doPost(e) {
   try {
-    const payload = JSON.parse(String(e.postData?.contents ?? ""));
+    var payload = JSON.parse(String(e.postData.contents || ""));
+
     requireValidToken(payload.token || "");
 
     if (payload.action !== "schedule_send") {
       throw new Error("Unknown action: must be 'schedule_send'.");
     }
 
-    const when = new Date(payload.when);
+    var when = new Date(payload.when);
     if (isNaN(when.getTime())) {
       throw new Error("Invalid 'when' date.");
     }
@@ -80,19 +81,19 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
     // One trigger, one payload. The trigger's unique ID keys the stored payload,
     // so the fire handler sends exactly this one email and deletes exactly
     // this one trigger — other scheduled sends are never touched.
-    const trigger = ScriptApp.newTrigger("sendScheduledMail")
+    var trigger = ScriptApp.newTrigger("sendScheduledMail")
       .timeBased()
       .at(when)
       .create();
 
-    const triggerId = trigger.getUniqueId();
+    var triggerId = trigger.getUniqueId();
     PropertiesService.getScriptProperties().setProperty(
       PROP_PREFIX + triggerId,
       JSON.stringify(payload)
     );
 
     return ContentService.createTextOutput(
-      JSON.stringify({ ok: true, scheduledFor: when.toISOString(), triggerId })
+      JSON.stringify({ ok: true, scheduledFor: when.toISOString(), triggerId: triggerId })
     ).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(
@@ -101,24 +102,24 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
   }
 }
 
-function sendScheduledMail(trigger: GoogleAppsScript.Script.Trigger): void {
-  const props = PropertiesService.getScriptProperties();
-  const triggerId = trigger?.getUniqueId?.();
+function sendScheduledMail(trigger) {
+  var props = PropertiesService.getScriptProperties();
+  var triggerId = trigger ? trigger.getUniqueId() : null;
   if (!triggerId) return;
 
-  const key = PROP_PREFIX + triggerId;
-  const raw = props.getProperty(key);
+  var key = PROP_PREFIX + triggerId;
+  var raw = props.getProperty(key);
   if (!raw) {
     // Nothing stored for this trigger (already handled or lost) — clean it up.
     ScriptApp.deleteTrigger(trigger);
     return;
   }
 
-  const data = JSON.parse(raw);
-  const when = new Date(data.when);
+  var data = JSON.parse(raw);
+  var when = new Date(data.when);
   if (when.getTime() > Date.now()) return; // not due yet; leave for a later fire
 
-  const options: GoogleAppsScript.Gmail.GmailAdvancedOptions = {};
+  var options = {};
   if (data.attachmentBase64 && data.attachmentName) {
     options.attachments = [
       Utilities.newBlob(
@@ -135,10 +136,10 @@ function sendScheduledMail(trigger: GoogleAppsScript.Script.Trigger): void {
 }
 
 // Optional manual test/diagnostic entry: logs all pending scheduled sends.
-function listPending(): void {
-  const props = PropertiesService.getScriptProperties();
-  const keys = props.getProperties();
+function listPending() {
+  var props = PropertiesService.getScriptProperties();
+  var keys = props.getProperties();
   Logger.log(
-    Object.keys(keys).filter((k) => k.startsWith(PROP_PREFIX))
+    Object.keys(keys).filter(function (k) { return k.startsWith(PROP_PREFIX); })
   );
 }
