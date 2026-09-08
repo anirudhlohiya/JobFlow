@@ -373,7 +373,7 @@ Auto-stop on reply detection
 ```
 GET /api/auth/google
   → Redirect to Google consent screen
-  → Scopes: gmail.send, gmail.readonly (for thread IDs)
+  → Scopes: gmail.readonly, gmail.send, gmail.compose (drafts.create requires gmail.compose/modify, not gmail.send)
         │
         ▼
 GET /api/auth/google/callback

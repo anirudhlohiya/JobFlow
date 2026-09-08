@@ -4,8 +4,9 @@ import { encryptSecret, decryptSecret } from "@/lib/crypto";
 import { prettifyGmailError } from "./api-error";
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.compose",
 ];
 
 const TOKEN_KEY = "google_refresh_token";

@@ -54,8 +54,9 @@ export async function prettifyGmailError(
         `This is a Google Cloud Console configuration issue (not an app bug). Fix it there:\n` +
         `1. Open https://console.cloud.google.com/apis/credentials → OAuth consent screen → Data Access.\n` +
         `2. Click ADD OR REMOVE SCOPES and add:\n` +
-        `   https://www.googleapis.com/auth/gmail.send\n` +
         `   https://www.googleapis.com/auth/gmail.readonly\n` +
+        `   https://www.googleapis.com/auth/gmail.send\n` +
+        `   https://www.googleapis.com/auth/gmail.compose\n` +
         `3. Click UPDATE, then re-run Connect Gmail and approve every toggle.\n\n` +
         `${scopesNote}\n\n` +
         `(Original error: ${raw})`
